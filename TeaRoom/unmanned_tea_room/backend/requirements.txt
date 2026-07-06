@@ -1,0 +1,12 @@
+Flask==3.0.0
+Flask-CORS==4.0.0
+Flask-SQLAlchemy==3.1.1
+Flask-JWT-Extended==4.6.0
+Flask-Login==0.6.3
+python-dotenv==1.0.0
+Pillow==10.1.0
+qrcode==7.4.2
+pytz==2023.3
+pandas==2.1.1
+openpyxl==3.1.2
+Werkzeug==3.0.1

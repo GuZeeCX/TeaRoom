@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ room.name }} - 无人茶室</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary-color: #667eea;
+            --secondary-color: #764ba2;
+        }
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+        .navbar {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        }
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .room-image {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+            border-radius: 15px;
+        }
+        .facility-tag {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            margin: 5px;
+            display: inline-block;
+        }
+        .price-box {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a5a);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+        }
+        .btn-reserve {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border: none;
+            color: white;
+            padding: 15px 40px;
+            border-radius: 25px;
+            font-weight: 600;
+            font-size: 18px;
+        }
+        /* 评价区域样式 */
+        .review-section {
+            margin-top: 30px;
+        }
+        .review-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            background: white;
+            border-radius: 15px 15px 0 0;
+        }
+        .average-rating {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .rating-number {
+            font-size: 48px;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        .rating-stars {
+            color: #ffc107;
+            font-size: 24px;
+        }
+        .review-item {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+        .review-user {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .review-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        .review-stars {
+            color: #ffc107;
+        }
+        .review-content {
+            color: #333;
+            line-height: 1.6;
+        }
+        .review-time {
+            color: #999;
+            font-size: 14px;
+        }
+        .empty-review {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+        .load-more-btn {
+            background: white;
+            border: 2px solid var(--primary-color);
+            color: var(--primary-color);
+            padding: 10px 30px;
+            border-radius: 25px;
+            font-weight: 600;
+        }
+        .load-more-btn:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-dark mb-4">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('user_frontend.dashboard') }}">
+                <i class="bi bi-cup-hot"></i> 无人茶室
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{{ url_for('user_frontend.rooms') }}">
+                    <i class="bi bi-building"></i> 茶室列表
+                </a>
+                <a class="nav-link" href="{{ url_for('user_frontend.orders') }}">
+                    <i class="bi bi-list"></i> 我的订单
+                </a>
+                <a class="nav-link" href="{{ url_for('user_frontend.profile') }}">
+                    <i class="bi bi-person"></i> 个人中心
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- 茶室信息卡片 -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        {% if room.image_url %}
+                        <img src="{{ room.image_url }}" class="room-image" alt="{{ room.name }}">
+                        {% else %}
+                        <img src="https://via.placeholder.com/600x300?text={{ room.name }}" class="room-image" alt="{{ room.name }}">
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <h2 class="mb-3">{{ room.name }}</h2>
+                        <p class="text-muted mb-3">{{ room.description or '暂无描述' }}</p>
+                        
+                        <div class="mb-3">
+                            <span class="me-3"><i class="bi bi-people"></i> 容量：{{ room.capacity }}人</span>
+                            <span class="me-3"><i class="bi bi-building"></i> 楼层：{{ room.floor or '未知' }}层</span>
+                            <span><i class="bi bi-check-circle text-success"></i> 
+                                {% if room.status == 'available' %}可预约
+                                {% elif room.status == 'occupied' %}使用中
+                                {% else %}维护中
+                                {% endif %}
+                            </span>
+                        </div>
+                        
+                        <!-- 设施标签 -->
+                        {% if room.facilities %}
+                        <div class="mb-3">
+                            {% for facility in room.facilities %}
+                            <span class="facility-tag">{{ facility }}</span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        
+                        <!-- 价格 -->
+                        <div class="price-box mb-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="fs-4">¥{{ room.price_per_hour }}</span>
+                                    <span class="ms-2">/小时</span>
+                                </div>
+                                {% if room.status == 'available' %}
+                                <a href="{{ url_for('user_frontend.reserve', room_id=room.id) }}" class="btn btn-reserve">
+                                    <i class="bi bi-calendar-check"></i> 立即预约
+                                </a>
+                                {% else %}
+                                <button class="btn btn-secondary" disabled>
+                                    <i class="bi bi-x-circle"></i> 暂不可预约
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 用户评价板块 -->
+        <div class="review-section">
+            <div class="review-header">
+                <h4><i class="bi bi-chat-dots"></i> 用户评价</h4>
+                <div class="average-rating">
+                    <div class="rating-number" id="avgRating">{{ avg_rating|round(1) if avg_rating else '0.0' }}</div>
+                    <div>
+                        <div class="rating-stars" id="avgStars">
+                            {% for i in range(5) %}
+                            {% if i < (avg_rating|round|int if avg_rating else 0) %}★{% else %}☆{% endif %}
+                            {% endfor %}
+                        </div>
+                        <small class="text-muted" id="totalReviews">共 {{ total_reviews if total_reviews else 0 }} 条评价</small>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 评价列表 -->
+            <div id="reviewList" class="px-3 py-3">
+                {% if reviews %}
+                {% for review in reviews %}
+                <div class="review-item">
+                    <div class="review-user">
+                        <div class="review-avatar">{{ review.username[0] if review.username else '匿' }}</div>
+                        <div>
+                            <div class="fw-bold">{{ review.username or '匿名用户' }}</div>
+                            <div class="review-stars">
+                                {% for i in range(5) %}
+                                {% if i < review.rating %}★{% else %}☆{% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="ms-auto review-time">
+                            {{ review.created_at.strftime('%Y-%m-%d') if review.created_at else '' }}
+                        </div>
+                    </div>
+                    <div class="review-content">
+                        {{ review.comment or '用户未填写评价内容' }}
+                    </div>
+                </div>
+                {% endfor %}
+                
+                <!-- 加载更多按钮 -->
+                {% if has_more %}
+                <div class="text-center mt-3">
+                    <button class="load-more-btn" onclick="loadMoreReviews()">
+                        <i class="bi bi-arrow-down-circle"></i> 加载更多评价
+                    </button>
+                </div>
+                {% endif %}
+                
+                {% else %}
+                <div class="empty-review">
+                    <i class="bi bi-chat-dots fs-1"></i>
+                    <p class="mt-3">暂无用户评价</p>
+                    <p class="text-muted">使用过该茶室的用户可以发表评价</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const roomId = {{ room.id }};
+        let currentPage = 1;
+        const perPage = 10;
+        let isLoading = false;
+
+        function loadMoreReviews() {
+            if (isLoading) return;
+            isLoading = true;
+            currentPage++;
+            
+            fetch(`/api/reviews/room/${roomId}?page=${currentPage}&per_page=${perPage}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.code === 200 && data.data.reviews.length > 0) {
+                        const reviewList = document.getElementById('reviewList');
+                        const loadMoreBtn = reviewList.querySelector('.load-more-btn');
+                        
+                        data.data.reviews.forEach(review => {
+                            const starsHtml = Array(5).fill(0).map((_, i) => 
+                                i < review.rating ? '★' : '☆'
+                            ).join('');
+                            
+                            const reviewHtml = `
+                                <div class="review-item">
+                                    <div class="review-user">
+                                        <div class="review-avatar">${review.username ? review.username[0] : '匿'}</div>
+                                        <div>
+                                            <div class="fw-bold">${review.username || '匿名用户'}</div>
+                                            <div class="review-stars">${starsHtml}</div>
+                                        </div>
+                                        <div class="ms-auto review-time">
+                                            ${review.created_at ? review.created_at.split('T')[0] : ''}
+                                        </div>
+                                    </div>
+                                    <div class="review-content">
+                                        ${review.comment || '用户未填写评价内容'}
+                                    </div>
+                                </div>
+                            `;
+                            
+                            if (loadMoreBtn) {
+                                loadMoreBtn.parentElement.insertAdjacentHTML('beforebegin', reviewHtml);
+                            } else {
+                                reviewList.insertAdjacentHTML('beforeend', reviewHtml);
+                            }
+                        });
+                        
+                        // 更新统计数据
+                        document.getElementById('avgRating').textContent = data.data.average_rating.toFixed(1);
+                        document.getElementById('totalReviews').textContent = `共 ${data.data.total_count} 条评价`;
+                        
+                        // 如果没有更多数据，移除加载按钮
+                        if (currentPage >= data.data.total_pages) {
+                            if (loadMoreBtn) {
+                                loadMoreBtn.parentElement.remove();
+                            }
+                        }
+                    }
+                    isLoading = false;
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    isLoading = false;
+                });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,295 @@
+{% extends "admin/base.html" %}
+
+{% block title %}系统设置 - 无人茶室管理系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>系统设置</h2>
+</div>
+
+<div class="row">
+    <!-- 基础信息设置 -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">基础信息</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="site_name" class="form-label">系统名称</label>
+                        <input type="text" class="form-control" id="site_name" name="site_name" 
+                               value="无人茶室管理系统">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="contact_phone" class="form-label">联系电话</label>
+                        <input type="tel" class="form-control" id="contact_phone" name="contact_phone" 
+                               value="400-123-4567">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="contact_email" class="form-label">联系邮箱</label>
+                        <input type="email" class="form-control" id="contact_email" name="contact_email" 
+                               value="support@tearoom.com">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="business_hours" class="form-label">营业时间</label>
+                        <input type="text" class="form-control" id="business_hours" name="business_hours" 
+                               value="09:00-22:00">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="site_description" class="form-label">系统描述</label>
+                        <textarea class="form-control" id="site_description" name="site_description" rows="3">
+                            无人茶室管理系统，提供便捷的茶室预约服务。
+                        </textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save"></i>
+                        保存设置
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 支付配置 -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">支付配置</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="wechat_enabled" name="wechat_enabled" checked>
+                            <label class="form-check-label" for="wechat_enabled">
+                                启用微信支付
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="wechat_appid" class="form-label">微信AppID</label>
+                        <input type="text" class="form-control" id="wechat_appid" name="wechat_appid" 
+                               placeholder="请输入微信AppID">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="wechat_mchid" class="form-label">微信商户号</label>
+                        <input type="text" class="form-control" id="wechat_mchid" name="wechat_mchid" 
+                               placeholder="请输入微信商户号">
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="alipay_enabled" name="alipay_enabled" checked>
+                            <label class="form-check-label" for="alipay_enabled">
+                                启用支付宝
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="alipay_appid" class="form-label">支付宝AppID</label>
+                        <input type="text" class="form-control" id="alipay_appid" name="alipay_appid" 
+                               placeholder="请输入支付宝AppID">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="alipay_private_key" class="form-label">支付宝私钥</label>
+                        <textarea class="form-control" id="alipay_private_key" name="alipay_private_key" rows="3"
+                                  placeholder="请输入支付宝私钥"></textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save"></i>
+                        保存设置
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 开门规则设置 -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">开门规则</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="open_method" class="form-label">开门方式</label>
+                        <select class="form-select" id="open_method" name="open_method">
+                            <option value="qrcode" selected>扫码开门</option>
+                            <option value="password">密码开门</option>
+                            <option value="both">扫码+密码</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="auto_close_time" class="form-label">自动关门时间（分钟）</label>
+                        <input type="number" class="form-control" id="auto_close_time" name="auto_close_time" 
+                               value="30" min="0" max="120">
+                        <small class="text-muted">用户开门后自动关门的时间，0表示不自动关门</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="max_open_count" class="form-label">每日最大开门次数</label>
+                        <input type="number" class="form-control" id="max_open_count" name="max_open_count" 
+                               value="10" min="1" max="50">
+                        <small class="text-muted">每个用户每天最多开门次数</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="require_order" name="require_order" checked>
+                            <label class="form-check-label" for="require_order">
+                                必须有有效订单才能开门
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="auto_open" name="auto_open">
+                            <label class="form-check-label" for="auto_open">
+                                订单开始时自动开门
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save"></i>
+                        保存设置
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 系统配置 -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">系统配置</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="session_timeout" class="form-label">会话超时时间（分钟）</label>
+                        <input type="number" class="form-control" id="session_timeout" name="session_timeout" 
+                               value="60" min="5" max="480">
+                        <small class="text-muted">管理员登录会话超时时间</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="max_upload_size" class="form-label">最大上传文件大小（MB）</label>
+                        <input type="number" class="form-control" id="max_upload_size" name="max_upload_size" 
+                               value="10" min="1" max="100">
+                        <small class="text-muted">单个文件最大上传大小</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="log_level" class="form-label">日志级别</label>
+                        <select class="form-select" id="log_level" name="log_level">
+                            <option value="DEBUG">DEBUG</option>
+                            <option value="INFO" selected>INFO</option>
+                            <option value="WARNING">WARNING</option>
+                            <option value="ERROR">ERROR</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="enable_registration" name="enable_registration" checked>
+                            <label class="form-check-label" for="enable_registration">
+                                允许用户注册
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="enable_email_verify" name="enable_email_verify">
+                            <label class="form-check-label" for="enable_email_verify">
+                                启用邮箱验证
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save"></i>
+                        保存设置
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 系统信息 -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">系统信息</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="text-muted small">系统版本</label>
+                <div class="h5">1.0.0</div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="text-muted small">Python版本</label>
+                <div class="h5">3.8+</div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="text-muted small">Flask版本</label>
+                <div class="h5">2.0+</div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="text-muted small">数据库</label>
+                <div class="h5">SQLite</div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="text-muted small">服务器时间</label>
+                <div class="h5" id="serverTime"></div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="text-muted small">运行时间</label>
+                <div class="h5">正常运行中</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// 更新服务器时间
+function updateServerTime() {
+    const now = new Date();
+    const options = { 
+        year: 'numeric', 
+        month: '2-digit', 
+        day: '2-digit', 
+        hour: '2-digit', 
+        minute: '2-digit', 
+        second: '2-digit',
+        hour12: false
+    };
+    document.getElementById('serverTime').textContent = now.toLocaleString('zh-CN', options);
+}
+
+// 每秒更新一次时间
+setInterval(updateServerTime, 1000);
+updateServerTime();
+</script>
+{% endblock %}

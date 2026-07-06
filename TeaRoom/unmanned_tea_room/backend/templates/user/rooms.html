@@ -1,0 +1,85 @@
+{% extends "admin/base.html" %}
+
+{% block title %}茶室列表 - 无人茶室管理系统{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2>茶室列表</h2>
+            <p class="text-muted">选择您需要的茶室进行预约</p>
+        </div>
+    </div>
+
+    <!-- 筛选和排序 -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('user_frontend.rooms') }}" class="row g-3">
+                <div class="col-md-4">
+                    <label for="search" class="form-label">茶室名称</label>
+                    <input type="text" class="form-control" id="search" name="search" placeholder="输入茶室名称" value="{{ search_query }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="capacity" class="form-label">容纳人数</label>
+                    <select class="form-select" id="capacity" name="capacity">
+                        <option value="">全部</option>
+                        <option value="2" {% if capacity_filter == '2' %}selected{% endif %}>2人</option>
+                        <option value="4" {% if capacity_filter == '4' %}selected{% endif %}>4人</option>
+                        <option value="6" {% if capacity_filter == '6' %}selected{% endif %}>6人</option>
+                        <option value="8" {% if capacity_filter == '8' %}selected{% endif %}>8人</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="sort" class="form-label">排序方式</label>
+                    <select class="form-select" id="sort" name="sort">
+                        <option value="price_asc" {% if sort_by == 'price_asc' %}selected{% endif %}>价格从低到高</option>
+                        <option value="price_desc" {% if sort_by == 'price_desc' %}selected{% endif %}>价格从高到低</option>
+                        <option value="capacity_asc" {% if sort_by == 'capacity_asc' %}selected{% endif %}>容量从小到大</option>
+                        <option value="capacity_desc" {% if sort_by == 'capacity_desc' %}selected{% endif %}>容量从大到小</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">筛选</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 茶室列表 -->
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        {% for room in rooms %}
+        <div class="col">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <h5 class="card-title mb-0">{{ room.name }}</h5>
+                        <span class="badge bg-primary">ID: {{ room.id }}</span>
+                    </div>
+                    <p class="card-text text-muted">
+                        <i class="bi bi-people"></i> 容纳人数: {{ room.capacity }}人<br>
+                        <i class="bi bi-clock"></i> 小时单价: ¥{{ room.price_per_hour }}<br>
+                        <i class="bi bi-calendar-check"></i> 状态: 
+                        <span class="badge {% if room.status == 'available' %}bg-success{% else %}bg-danger{% endif %}">
+                            {{ '可用' if room.status == 'available' else '占用' }}
+                        </span>
+                    </p>
+                    <div class="mt-4">
+                        <a href="{{ url_for('user_frontend.reserve', room_id=room.id) }}" class="btn btn-primary w-100">
+                            立即预约
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if not rooms %}
+    <div class="card mt-4">
+        <div class="card-body text-center">
+            <p class="text-muted">暂无可用茶室</p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,295 @@
+{% extends "admin/base.html" %}
+
+{% block title %}账户充值 - 无人茶室管理系统{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/recharge.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2>账户充值</h2>
+            <p class="text-muted">为您的账户充值，方便后续预约使用</p>
+        </div>
+    </div>
+
+    <!-- 当前余额 -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">当前账户余额</h5>
+            <h3 class="text-primary">¥{{ user.balance|round(2) }}</h3>
+        </div>
+    </div>
+
+    <!-- 充值金额选择 -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">选择充值金额</h5>
+            
+            <!-- 预设金额 -->
+            <div class="row g-3 mb-4">
+                {% for amount in [100, 300, 500, 1000, 5000] %}
+                <div class="col-md-2">
+                    <button type="button" class="btn btn-outline-primary w-100 amount-btn" data-amount="{{ amount }}">
+                        ¥{{ amount }}
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- 自定义金额 -->
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <input type="number" class="form-control" id="custom-amount" placeholder="请输入自定义金额" min="1" step="0.01">
+                    <div id="amount-error" class="text-danger small mt-1"></div>
+                </div>
+                <div class="col-md-2">
+                    <button type="button" class="btn btn-outline-secondary w-100" id="confirm-custom-amount">
+                        确认输入
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 支付方式选择 -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">选择支付方式</h5>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="payment-option p-3 border rounded-lg cursor-pointer active" data-method="微信">
+                        <div class="d-flex align-items-center">
+                            <div class="me-3">
+                                <i class="bi bi-wechat" style="font-size: 24px; color: #07C160;"></i>
+                            </div>
+                            <div>
+                                <h6>微信支付</h6>
+                                <p class="text-muted small">推荐使用</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="payment-option p-3 border rounded-lg cursor-pointer" data-method="支付宝">
+                        <div class="d-flex align-items-center">
+                            <div class="me-3">
+                                <i class="bi bi-alipay" style="font-size: 24px; color: #1677FF;"></i>
+                            </div>
+                            <div>
+                                <h6>支付宝</h6>
+                                <p class="text-muted small">安全快捷</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="payment-option p-3 border rounded-lg cursor-pointer" data-method="银行卡">
+                        <div class="d-flex align-items-center">
+                            <div class="me-3">
+                                <i class="bi bi-credit-card" style="font-size: 24px; color: #6C757D;"></i>
+                            </div>
+                            <div>
+                                <h6>银行卡</h6>
+                                <p class="text-muted small">支持储蓄卡</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 充值确认 -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">充值确认</h5>
+            <div class="form-group mb-4">
+                <label for="recharge-amount" class="form-label">充值金额</label>
+                <input type="text" class="form-control" id="recharge-amount" readonly placeholder="请选择充值金额">
+            </div>
+            <button type="button" class="btn btn-primary w-100" id="confirm-recharge">
+                确认充值
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 确认弹窗 -->
+<div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmModalLabel">充值确认</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>您将充值 <span id="modal-amount" class="text-primary font-weight-bold"></span> 元</p>
+                <p>支付方式：<span id="modal-method"></span></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="submit-recharge">确认充值</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 成功提示 -->
+<div class="toast-container position-fixed top-50 start-50 translate-middle" style="z-index: 1050;">
+    <div class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true" id="successToast">
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="bi bi-check-circle me-2"></i>
+                <span id="success-message"></span>
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+
+<script>
+// 等待DOM加载完成后再执行JavaScript代码
+document.addEventListener('DOMContentLoaded', function() {
+    // 金额选择
+    const amountBtns = document.querySelectorAll('.amount-btn');
+    const customAmountInput = document.getElementById('custom-amount');
+    const confirmCustomAmountBtn = document.getElementById('confirm-custom-amount');
+    const rechargeAmountInput = document.getElementById('recharge-amount');
+    const amountError = document.getElementById('amount-error');
+
+    // 支付方式选择
+    const paymentOptions = document.querySelectorAll('.payment-option');
+    let selectedPaymentMethod = '微信';
+
+    // 预设金额按钮点击
+    amountBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            // 移除所有按钮的高亮状态
+            amountBtns.forEach(b => b.classList.remove('btn-primary'));
+            amountBtns.forEach(b => b.classList.add('btn-outline-primary'));
+            
+            // 高亮当前按钮
+            this.classList.remove('btn-outline-primary');
+            this.classList.add('btn-primary');
+            
+            // 设置充值金额
+            const amount = this.dataset.amount;
+            rechargeAmountInput.value = `¥${amount}`;
+            amountError.textContent = '';
+        });
+    });
+
+    // 确认自定义金额
+    confirmCustomAmountBtn.addEventListener('click', function() {
+        const customAmount = parseFloat(customAmountInput.value);
+        
+        // 验证金额
+        if (isNaN(customAmount) || customAmount < 1) {
+            amountError.textContent = '金额需≥1元';
+            return;
+        }
+        
+        if (customAmount.toString().split('.')[1]?.length > 2) {
+            amountError.textContent = '金额最多2位小数';
+            return;
+        }
+        
+        // 移除所有按钮的高亮状态
+        amountBtns.forEach(b => b.classList.remove('btn-primary'));
+        amountBtns.forEach(b => b.classList.add('btn-outline-primary'));
+        
+        // 设置充值金额
+        rechargeAmountInput.value = `¥${customAmount.toFixed(2)}`;
+        amountError.textContent = '';
+    });
+
+    // 支付方式选择
+    paymentOptions.forEach(option => {
+        option.addEventListener('click', function() {
+            // 移除所有选项的高亮状态
+            paymentOptions.forEach(o => o.classList.remove('active', 'border-primary'));
+            paymentOptions.forEach(o => o.classList.add('border'));
+            
+            // 高亮当前选项
+            this.classList.add('active', 'border-primary');
+            this.classList.remove('border');
+            
+            // 设置选中的支付方式
+            selectedPaymentMethod = this.dataset.method;
+        });
+    });
+
+    // 确认充值按钮点击
+    const confirmRechargeBtn = document.getElementById('confirm-recharge');
+    const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
+    const modalAmount = document.getElementById('modal-amount');
+    const modalMethod = document.getElementById('modal-method');
+
+    confirmRechargeBtn.addEventListener('click', function() {
+        const rechargeAmount = rechargeAmountInput.value;
+        
+        if (!rechargeAmount) {
+            alert('请选择充值金额');
+            return;
+        }
+        
+        // 显示确认弹窗
+        modalAmount.textContent = rechargeAmount;
+        modalMethod.textContent = selectedPaymentMethod;
+        confirmModal.show();
+    });
+
+    // 提交充值
+    const submitRechargeBtn = document.getElementById('submit-recharge');
+    const successToast = new bootstrap.Toast(document.getElementById('successToast'));
+    const successMessage = document.getElementById('success-message');
+
+    submitRechargeBtn.addEventListener('click', function() {
+        const rechargeAmount = rechargeAmountInput.value;
+        const amount = parseFloat(rechargeAmount.replace('¥', ''));
+        const method = selectedPaymentMethod;
+        
+        // 验证充值金额
+        if (isNaN(amount) || amount <= 0) {
+            alert('请选择或输入有效的充值金额');
+            return;
+        }
+        
+        // 发送充值请求
+        fetch('/user/recharge', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: `amount=${amount}&payment_method=${method}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // 关闭弹窗
+                confirmModal.hide();
+                
+                // 显示成功提示
+                successMessage.textContent = `充值成功！¥${amount.toFixed(2)}元已到账`;
+                successToast.show();
+                
+                // 3秒后刷新页面
+                setTimeout(() => {
+                    window.location.reload();
+                }, 3000);
+            } else {
+                alert('充值失败：' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('充值失败：', error);
+            alert('充值失败，请稍后重试');
+        });
+    });
+});
+</script>
+{% endblock %}

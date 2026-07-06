@@ -1,0 +1,276 @@
+{% extends "admin/base.html" %}
+
+{% block title %}{{ room.name }} - 盈利详情{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>
+        <a href="{{ url_for('admin.statistics') }}" class="text-decoration-none me-3">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        {{ room.name }} - 盈利详情
+    </h2>
+</div>
+
+<!-- 茶室信息 -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3">
+                {% if room.image_url %}
+                <img src="{{ room.image_url }}" alt="茶室图片" class="img-fluid rounded">
+                {% else %}
+                <div style="width: 100%; height: 150px; background: #e9ecef; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                    <i class="bi bi-image text-muted" style="font-size: 48px;"></i>
+                </div>
+                {% endif %}
+            </div>
+            <div class="col-md-9">
+                <h5>{{ room.name }}</h5>
+                <p class="text-muted">{{ room.description }}</p>
+                <div class="row">
+                    <div class="col-md-4">
+                        <small class="text-muted">价格/小时</small>
+                        <div class="h5 text-primary">¥{{ room.price_per_hour }}</div>
+                    </div>
+                    <div class="col-md-4">
+                        <small class="text-muted">容纳人数</small>
+                        <div class="h5">{{ room.capacity }}人</div>
+                    </div>
+                    <div class="col-md-4">
+                        <small class="text-muted">楼层</small>
+                        <div class="h5">{{ room.floor }}楼</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 日期选择 -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label for="start_date" class="form-label">开始日期</label>
+                <input type="date" class="form-control" id="start_date" name="start_date" 
+                       value="{{ start_date }}">
+            </div>
+            <div class="col-md-3">
+                <label for="end_date" class="form-label">结束日期</label>
+                <input type="date" class="form-control" id="end_date" name="end_date" 
+                       value="{{ end_date }}">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-search"></i>
+                    查询
+                </button>
+            </div>
+            <div class="col-md-4">
+                <div class="text-end">
+                    <small class="text-muted">统计周期：{{ start_date }} 至 {{ end_date }}</small>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 总体统计 -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div class="icon bg-primary bg-opacity-10 text-primary">
+                <i class="bi bi-currency-yen"></i>
+            </div>
+            <div class="value">¥{{ total_revenue|round(2) }}</div>
+            <div class="label">总营收</div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div class="icon bg-success bg-opacity-10 text-success">
+                <i class="bi bi-receipt"></i>
+            </div>
+            <div class="value">{{ total_orders }}</div>
+            <div class="label">总订单数</div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div class="icon bg-info bg-opacity-10 text-info">
+                <i class="bi bi-graph-up"></i>
+            </div>
+            <div class="value">¥{{ (total_revenue / total_orders)|round(2) if total_orders > 0 else 0 }}</div>
+            <div class="label">平均订单金额</div>
+        </div>
+    </div>
+</div>
+
+<!-- 营收趋势图 -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">营收趋势</h5>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-info mb-3">
+            <i class="bi bi-calendar-range"></i>
+            当前查看时间段：<strong>{{ start_date }}</strong> 至 <strong>{{ end_date }}</strong>
+        </div>
+        <canvas id="revenueChart" height="100"></canvas>
+    </div>
+</div>
+
+<!-- 茶叶销售统计 -->
+{% if tea_sales %}
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">茶叶销售统计</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>茶叶名称</th>
+                        <th>销售次数</th>
+                        <th>茶叶收入</th>
+                        <th>销售重量</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tea_name, tea_info in tea_sales.items() %}
+                    <tr>
+                        <td>{{ tea_name }}</td>
+                        <td>{{ tea_info.count }}次</td>
+                        <td>¥{{ tea_info.revenue|round(2) }}</td>
+                        <td>{{ tea_info.weight }}g</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- 订单列表 -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">订单列表</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>订单号</th>
+                        <th>用户</th>
+                        <th>开始时间</th>
+                        <th>时长</th>
+                        <th>金额</th>
+                        <th>茶叶</th>
+                        <th>状态</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in room_orders %}
+                    <tr>
+                        <td>{{ order.order_no }}</td>
+                        <td>{{ order.user.real_name if order.user else '-' }}</td>
+                        <td>{{ order.start_time.strftime('%Y-%m-%d %H:%M') if order.start_time else '-' }}</td>
+                        <td>{{ order.duration_hours }}小时</td>
+                        <td>¥{{ order.total_amount|round(2) }}</td>
+                        <td>{{ order.tea_type or '自带茶叶' }}</td>
+                        <td>
+                            <span class="badge badge-{{ order.status }}">
+                                {% if order.status == 'pending' %}待确认
+                                {% elif order.status == 'confirmed' %}已确认
+                                {% elif order.status == 'in_use' %}使用中
+                                {% elif order.status == 'completed' %}已完成
+                                {% elif order.status == 'cancelled' %}已取消
+                                {% endif %}
+                            </span>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">
+                            暂无订单数据
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// 营收趋势图
+const ctx = document.getElementById('revenueChart').getContext('2d');
+const revenueData = {{ daily_revenue|tojson }};
+
+const labels = revenueData.map(item => item.date);
+const revenues = revenueData.map(item => item.revenue);
+const orderCounts = revenueData.map(item => item.order_count);
+
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: labels,
+        datasets: [{
+            label: '营收（元）',
+            data: revenues,
+            borderColor: 'rgb(102, 126, 234)',
+            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+            tension: 0.4,
+            fill: true,
+            yAxisID: 'y'
+        }, {
+            label: '订单数',
+            data: orderCounts,
+            borderColor: 'rgb(118, 75, 162)',
+            backgroundColor: 'rgba(118, 75, 162, 0.1)',
+            tension: 0.4,
+            fill: true,
+            yAxisID: 'y1'
+        }]
+    },
+    options: {
+        responsive: true,
+        interaction: {
+            mode: 'index',
+            intersect: false,
+        },
+        scales: {
+            y: {
+                type: 'linear',
+                display: true,
+                position: 'left',
+                title: {
+                    display: true,
+                    text: '营收（元）'
+                }
+            },
+            y1: {
+                type: 'linear',
+                display: true,
+                position: 'right',
+                grid: {
+                    drawOnChartArea: false,
+                },
+                title: {
+                    display: true,
+                    text: '订单数'
+                }
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

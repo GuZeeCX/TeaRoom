@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>订单详情 - 无人茶室</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary-color: #667eea;
+            --secondary-color: #764ba2;
+        }
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+        .navbar {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        }
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .status-badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+        .status-pending { background: #fff3cd; color: #856404; }
+        .status-confirmed { background: #d4edda; color: #155724; }
+        .status-in_use { background: #cce5ff; color: #004085; }
+        .status-completed { background: #d1ecf1; color: #0c5460; }
+        .status-cancelled { background: #f8d7da; color: #721c24; }
+        .door-code-box {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+        }
+        .door-code {
+            font-size: 36px;
+            font-weight: bold;
+            letter-spacing: 8px;
+        }
+        .btn-review {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            border: none;
+            color: white;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-weight: 600;
+        }
+        .btn-reviewed {
+            background: #e9ecef;
+            color: #6c757d;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: not-allowed;
+        }
+        /* 评价模态框样式 */
+        .star-rating {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .star-rating .star {
+            font-size: 40px;
+            color: #ddd;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .star-rating .star.active {
+            color: #ffc107;
+        }
+        .star-rating .star:hover {
+            transform: scale(1.1);
+        }
+        .comment-box {
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 15px;
+            resize: none;
+        }
+        .comment-box:focus {
+            border-color: var(--primary-color);
+            outline: none;
+        }
+        .char-count {
+            text-align: right;
+            color: #6c757d;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-dark mb-4">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('user_frontend.dashboard') }}">
+                <i class="bi bi-cup-hot"></i> 无人茶室
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{{ url_for('user_frontend.orders') }}">
+                    <i class="bi bi-list"></i> 我的订单
+                </a>
+                <a class="nav-link" href="{{ url_for('user_frontend.profile') }}">
+                    <i class="bi bi-person"></i> 个人中心
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- 订单信息卡片 -->
+        <div class="card mb-4">
+            <div class="card-header bg-white py-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-receipt"></i> 订单详情
+                    </h5>
+                    <span class="status-badge status-{{ order.status }}">
+                        {% if order.status == 'pending' %}待支付
+                        {% elif order.status == 'confirmed' %}已确认
+                        {% elif order.status == 'in_use' or order.status == 'in_progress' %}使用中
+                        {% elif order.status == 'completed' %}已完成
+                        {% elif order.status == 'cancelled' %}已取消
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-2"><strong>订单号：</strong>{{ order.order_no or booking.booking_no }}</p>
+                        <p class="mb-2"><strong>茶室：</strong>{{ booking.room.name }}</p>
+                        <p class="mb-2"><strong>预约时间：</strong>{{ booking.start_time.strftime('%Y-%m-%d %H:%M') }} - {{ booking.end_time.strftime('%H:%M') }}</p>
+                        <p class="mb-2"><strong>时长：</strong>{{ booking.duration_hours }}小时</p>
+                        {% if booking.tea_type and booking.tea_type != '自带茶叶' %}
+                        <p class="mb-2"><strong>茶叶：</strong>{{ booking.tea_type }} {{ booking.tea_weight }}克</p>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-2"><strong>茶室费用：</strong>¥{{ (booking.duration_hours * booking.room.price_per_hour)|round(2) }}</p>
+                        {% if booking.tea_price %}
+                        <p class="mb-2"><strong>茶叶费用：</strong>¥{{ booking.tea_price|round(2) }}</p>
+                        {% endif %}
+                        <p class="mb-2"><strong>优惠金额：</strong>¥0.00</p>
+                        <p class="mb-3"><strong class="text-danger">订单金额：</strong><span class="text-danger fs-5">¥{{ order.total_amount|round(2) }}</span></p>
+                        <p class="mb-0 text-muted"><small>创建时间：{{ booking.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</small></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 开门验证码（仅已确认/已支付状态显示） -->
+        {% if order.status in ['confirmed', 'paid'] and order.door_code %}
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="door-code-box">
+                    <p class="mb-2"><i class="bi bi-lock"></i> 开门验证码</p>
+                    <div class="door-code">{{ order.door_code }}</div>
+                    <p class="mt-3 mb-0"><small>请在门禁处输入此6位数字验证码开门</small></p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- 操作按钮区域 -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="d-flex gap-3 justify-content-center flex-wrap">
+                    <!-- 待支付状态 -->
+                    {% if order.status == 'pending' %}
+                    <a href="{{ url_for('user_frontend.cancel_booking', booking_id=booking.id) }}" class="btn btn-outline-danger">
+                        <i class="bi bi-x-circle"></i> 取消订单
+                    </a>
+                    <button class="btn btn-primary" onclick="payOrder()">
+                        <i class="bi bi-credit-card"></i> 立即支付
+                    </button>
+                    {% endif %}
+
+                    <!-- 已确认/已支付状态 -->
+                    {% if order.status in ['confirmed', 'paid'] %}
+                    <a href="{{ url_for('user_frontend.cancel_booking', booking_id=booking.id) }}" class="btn btn-outline-danger">
+                        <i class="bi bi-x-circle"></i> 取消订单
+                    </a>
+                    <a href="{{ url_for('user_frontend.scan_access') }}" class="btn btn-primary">
+                        <i class="bi bi-door-open"></i> 去开门
+                    </a>
+                    {% endif %}
+
+                    <!-- 使用中状态 -->
+                    {% if order.status in ['in_use', 'in_progress'] %}
+                    <button class="btn btn-info" onclick="renewOrder()">
+                        <i class="bi bi-clock-history"></i> 订单续费
+                    </button>
+                    <button class="btn btn-success" onclick="settleOrder()">
+                        <i class="bi bi-calculator"></i> 订单结算
+                    </button>
+                    {% endif %}
+
+                    <!-- 已完成状态 - 评价按钮 -->
+                    {% if order.status == 'completed' %}
+                        {% if not order.reviewed %}
+                        <button class="btn btn-review" onclick="showReviewModal()">
+                            <i class="bi bi-star"></i> 提交评价
+                        </button>
+                        {% else %}
+                        <span class="btn-reviewed">
+                            <i class="bi bi-star-fill"></i> 已评价
+                        </span>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 评价模态框 -->
+    <div class="modal fade" id="reviewModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-star"></i> 订单评价</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-4">
+                        <p class="text-center mb-3">请为本次体验打分</p>
+                        <!-- 星级选择 -->
+                        <div class="star-rating" id="starRating">
+                            <span class="star" data-rating="1">★</span>
+                            <span class="star" data-rating="2">★</span>
+                            <span class="star" data-rating="3">★</span>
+                            <span class="star" data-rating="4">★</span>
+                            <span class="star" data-rating="5">★</span>
+                        </div>
+                        <p class="text-center text-muted" id="ratingText">请选择星级评分</p>
+                    </div>
+                    
+                    <!-- 评论输入 -->
+                    <div class="mb-3">
+                        <label class="form-label">分享你的使用体验（选填）</label>
+                        <textarea 
+                            class="form-control comment-box" 
+                            id="commentInput"
+                            rows="4"
+                            maxlength="200"
+                            placeholder="请输入您的评价内容..."
+                            oninput="updateCharCount()"
+                        ></textarea>
+                        <div class="char-count">
+                            <span id="charCount">0</span>/200
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="submitReview()">
+                        <i class="bi bi-send"></i> 提交评价
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let selectedRating = 0;
+        const orderId = {{ order.id if order.id else 0 }};
+        const roomId = {{ booking.room.id }};
+        const token = localStorage.getItem('token');
+
+        // 星级评分点击事件
+        document.querySelectorAll('.star-rating .star').forEach(star => {
+            star.addEventListener('click', function() {
+                selectedRating = parseInt(this.dataset.rating);
+                updateStars();
+                updateRatingText();
+            });
+        });
+
+        function updateStars() {
+            document.querySelectorAll('.star-rating .star').forEach(star => {
+                const rating = parseInt(star.dataset.rating);
+                if (rating <= selectedRating) {
+                    star.classList.add('active');
+                } else {
+                    star.classList.remove('active');
+                }
+            });
+        }
+
+        function updateRatingText() {
+            const texts = ['', '非常不满意', '不满意', '一般', '满意', '非常满意'];
+            document.getElementById('ratingText').textContent = texts[selectedRating] || '请选择星级评分';
+        }
+
+        function updateCharCount() {
+            const comment = document.getElementById('commentInput').value;
+            document.getElementById('charCount').textContent = comment.length;
+        }
+
+        function showReviewModal() {
+            selectedRating = 0;
+            document.getElementById('commentInput').value = '';
+            document.getElementById('charCount').textContent = '0';
+            updateStars();
+            updateRatingText();
+            new bootstrap.Modal(document.getElementById('reviewModal')).show();
+        }
+
+        function submitReview() {
+            if (selectedRating === 0) {
+                alert('请选择星级评分');
+                return;
+            }
+
+            const comment = document.getElementById('commentInput').value;
+
+            // 获取token（从session或localStorage）
+            fetch('/api/reviews', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify({
+                    order_id: orderId,
+                    room_id: roomId,
+                    rating: selectedRating,
+                    comment: comment
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.code === 200) {
+                    alert('评价成功！');
+                    bootstrap.Modal.getInstance(document.getElementById('reviewModal')).hide();
+                    // 刷新页面
+                    location.reload();
+                } else {
+                    alert(data.message || '评价失败');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('提交评价失败，请稍后重试');
+            });
+        }
+
+        function payOrder() {
+            alert('支付功能开发中...');
+        }
+
+        function renewOrder() {
+            alert('续费功能开发中...');
+        }
+
+        function settleOrder() {
+            alert('结算功能开发中...');
+        }
+    </script>
+</body>
+</html>

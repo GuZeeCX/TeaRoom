@@ -1,0 +1,201 @@
+{% extends "admin/base.html" %}
+
+{% block title %}数据统计 - 无人茶室管理系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>数据统计</h2>
+</div>
+
+<!-- 日期选择 -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label for="start_date" class="form-label">开始日期</label>
+                <input type="date" class="form-control" id="start_date" name="start_date" 
+                       value="{{ start_date }}">
+            </div>
+            <div class="col-md-3">
+                <label for="end_date" class="form-label">结束日期</label>
+                <input type="date" class="form-control" id="end_date" name="end_date" 
+                       value="{{ end_date }}">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-search"></i>
+                    查询
+                </button>
+            </div>
+            <div class="col-md-4">
+                <div class="text-end">
+                    <small class="text-muted">统计周期：{{ start_date }} 至 {{ end_date }}</small>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 总体统计 -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div class="icon bg-primary bg-opacity-10 text-primary">
+                <i class="bi bi-currency-yen"></i>
+            </div>
+            <div class="value">¥{{ total_revenue|round(2) }}</div>
+            <div class="label">总营收</div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div class="icon bg-success bg-opacity-10 text-success">
+                <i class="bi bi-receipt"></i>
+            </div>
+            <div class="value">{{ total_orders }}</div>
+            <div class="label">总订单数</div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div class="icon bg-info bg-opacity-10 text-info">
+                <i class="bi bi-graph-up"></i>
+            </div>
+            <div class="value">¥{{ (total_revenue / total_orders)|round(2) if total_orders > 0 else 0 }}</div>
+            <div class="label">平均订单金额</div>
+        </div>
+    </div>
+</div>
+
+<!-- 营收趋势图 -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">营收趋势</h5>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-info mb-3">
+            <i class="bi bi-calendar-range"></i>
+            当前查看时间段：<strong>{{ start_date }}</strong> 至 <strong>{{ end_date }}</strong>
+        </div>
+        <canvas id="revenueChart" height="100"></canvas>
+    </div>
+</div>
+
+<!-- 房间使用率 -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">房间使用率</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>房间名称</th>
+                        <th>使用率</th>
+                        <th>订单数</th>
+                        <th>使用率进度</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in room_usage %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('admin.room_statistics', room_id=item.room_id) }}" class="text-decoration-none fw-bold text-primary">
+                                {{ item.room_name }}
+                            </a>
+                        </td>
+                        <td>{{ item.usage_rate }}%</td>
+                        <td>{{ item.order_count }}</td>
+                        <td>
+                            <div class="progress" style="height: 20px;">
+                                <div class="progress-bar bg-primary" role="progressbar" 
+                                     style="width: {{ item.usage_rate }}%;"
+                                     aria-valuenow="{{ item.usage_rate }}" 
+                                     aria-valuemin="0" aria-valuemax="100">
+                                    {{ item.usage_rate }}%
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted py-4">
+                            暂无数据
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// 营收趋势图
+const ctx = document.getElementById('revenueChart').getContext('2d');
+const revenueData = {{ daily_revenue|tojson }};
+
+const labels = revenueData.map(item => item.date);
+const revenues = revenueData.map(item => item.revenue);
+const orderCounts = revenueData.map(item => item.order_count);
+
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: labels,
+        datasets: [{
+            label: '营收（元）',
+            data: revenues,
+            borderColor: 'rgb(102, 126, 234)',
+            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+            tension: 0.4,
+            fill: true,
+            yAxisID: 'y'
+        }, {
+            label: '订单数',
+            data: orderCounts,
+            borderColor: 'rgb(118, 75, 162)',
+            backgroundColor: 'rgba(118, 75, 162, 0.1)',
+            tension: 0.4,
+            fill: true,
+            yAxisID: 'y1'
+        }]
+    },
+    options: {
+        responsive: true,
+        interaction: {
+            mode: 'index',
+            intersect: false,
+        },
+        scales: {
+            y: {
+                type: 'linear',
+                display: true,
+                position: 'left',
+                title: {
+                    display: true,
+                    text: '营收（元）'
+                }
+            },
+            y1: {
+                type: 'linear',
+                display: true,
+                position: 'right',
+                grid: {
+                    drawOnChartArea: false,
+                },
+                title: {
+                    display: true,
+                    text: '订单数'
+                }
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

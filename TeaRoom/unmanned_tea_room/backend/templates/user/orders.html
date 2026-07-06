@@ -1,0 +1,112 @@
+{% extends "admin/base.html" %}
+
+{% block title %}我的订单 - 无人茶室管理系统{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2>我的订单</h2>
+            <p class="text-muted">查看和管理您的预约订单</p>
+        </div>
+    </div>
+
+    <!-- 本月统计 -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">本月预约次数</h5>
+                    <h3 class="text-primary">{{ month_booking_count }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">本月总消费</h5>
+                    <h3 class="text-success">¥{{ month_total_amount|round(2) }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 筛选 -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('user_frontend.orders') }}" class="row g-3">
+                <div class="col-md-6">
+                    <label for="status" class="form-label">订单状态</label>
+                    <select class="form-select" id="status" name="status">
+                        <option value="">全部</option>
+                        <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>待确认</option>
+                        <option value="confirmed" {% if status_filter == 'confirmed' %}selected{% endif %}>已确认</option>
+                        <option value="in_use" {% if status_filter == 'in_use' %}selected{% endif %}>使用中</option>
+                        <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>已完成</option>
+                        <option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>已取消</option>
+                    </select>
+                </div>
+                <div class="col-md-6 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">筛选</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 订单列表 -->
+    <div class="card">
+        <div class="card-body">
+            {% if bookings %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>订单ID</th>
+                            <th>茶室名称</th>
+                            <th>预约时段</th>
+                            <th>茶叶</th>
+                            <th>总费用</th>
+                            <th>状态</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for booking in bookings %}
+                        <tr>
+                            <td>{{ booking.id }}</td>
+                            <td>{{ booking.room.name if booking.room else '-' }}</td>
+                            <td>
+                                {{ booking.start_time.strftime('%Y-%m-%d %H:%M') }}<br>
+                                至<br>
+                                {{ booking.end_time.strftime('%Y-%m-%d %H:%M') }}
+                            </td>
+                            <td>{{ booking.tea_type or '自带茶叶' }}</td>
+                            <td>¥{{ booking.estimated_amount|round(2) }}</td>
+                            <td>
+                                <span class="badge {% if booking.status == 'pending' %}bg-warning{% elif booking.status == 'confirmed' %}bg-success{% elif booking.status == 'in_use' %}bg-info{% elif booking.status == 'completed' %}bg-secondary{% elif booking.status == 'cancelled' %}bg-danger{% endif %}">
+                                    {% if booking.status == 'pending' %}待确认
+                                    {% elif booking.status == 'confirmed' %}已确认
+                                    {% elif booking.status == 'in_use' %}使用中
+                                    {% elif booking.status == 'completed' %}已完成
+                                    {% elif booking.status == 'cancelled' %}已取消
+                                    {% endif %}
+                                </span>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('user_frontend.order_detail', booking_id=booking.id) }}" class="btn btn-sm btn-outline-primary">查看详情</a>
+                                {% if booking.status == 'pending' and booking.start_time > now %}
+                                <a href="{{ url_for('user_frontend.cancel_booking', booking_id=booking.id) }}" class="btn btn-sm btn-outline-danger mt-1" onclick="return confirm('确定要取消预约吗？');">取消预约</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted text-center">暂无订单</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

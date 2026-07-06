@@ -1,0 +1,130 @@
+/* 充值页面样式 */
+
+/* 金额按钮样式 */
+.amount-btn {
+    transition: all 0.3s ease;
+    border-radius: 8px;
+    padding: 12px 8px;
+    font-weight: 500;
+}
+
+.amount-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.amount-btn.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.amount-btn.btn-primary:hover {
+    background-color: var(--accent-color);
+    border-color: var(--accent-color);
+}
+
+/* 支付方式选项样式 */
+.payment-option {
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.payment-option:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.payment-option.active {
+    background-color: rgba(139, 69, 19, 0.1);
+    border-color: var(--primary-color) !important;
+}
+
+/* 确认按钮样式 */
+#confirm-recharge {
+    padding: 12px;
+    font-size: 16px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+#confirm-recharge:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* 自定义金额输入框样式 */
+#custom-amount {
+    transition: all 0.3s ease;
+}
+
+#custom-amount:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(139, 69, 19, 0.25);
+}
+
+/* 错误提示样式 */
+#amount-error {
+    font-size: 12px;
+    color: var(--danger-color);
+}
+
+/* 成功提示样式 */
+.toast {
+    min-width: 300px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .amount-btn {
+        margin-bottom: 8px;
+    }
+    
+    .payment-option {
+        margin-bottom: 12px;
+    }
+}
+
+/* 卡片样式 */
+.card {
+    transition: all 0.3s ease;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* 表格样式 */
+.table {
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.table thead th {
+    background-color: var(--light-color);
+    border-bottom: 2px solid var(--secondary-color);
+    font-weight: 600;
+    color: var(--dark-color);
+}
+
+.table tbody tr:hover {
+    background-color: rgba(210, 180, 140, 0.1);
+}
+
+/* 模态框样式 */
+.modal-content {
+    border-radius: 12px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+}
+
+.modal-header {
+    border-bottom: 1px solid var(--secondary-color);
+}
+
+.modal-footer {
+    border-top: 1px solid var(--secondary-color);
+}

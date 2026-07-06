@@ -1,0 +1,57 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}茶叶种类 - 无人茶室管理系统{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-lg-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2 class="card-title">
+                            <i class="bi bi-cup-hot me-2"></i>
+                            茶叶种类
+                        </h2>
+                    </div>
+                    
+                    <div class="row">
+                        {% for tea in teas %}
+                        <div class="col-md-3 mb-4">
+                            <div class="card h-100">
+                                {% if tea.image_url %}
+                                <img src="{{ tea.image_url }}" class="card-img-top" alt="{{ tea.name }}" style="height: 200px; object-fit: cover;">
+                                {% else %}
+                                <div class="card-img-top bg-secondary text-white d-flex align-items-center justify-content-center" style="height: 200px;">
+                                    <i class="bi bi-cup-hot" style="font-size: 48px;"></i>
+                                </div>
+                                {% endif %}
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ tea.name }}</h5>
+                                    <p class="card-text text-muted mb-2">{{ tea.description or '暂无描述' }}</p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="text-primary font-weight-bold">¥{{ tea.price }}</span>
+                                        <span class="badge {% if tea.stock > 0 %}badge-available{% else %}badge-occupied{% endif %}">
+                                            库存: {{ tea.stock }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // 页面加载完成后执行
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('茶叶种类页面加载完成');
+    });
+</script>
+{% endblock %}

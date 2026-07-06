@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的报修 - 无人茶室</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary-color: #667eea;
+            --secondary-color: #764ba2;
+        }
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+        .navbar {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        }
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .status-pending { background: #fff3cd; color: #856404; }
+        .status-processing { background: #cce5ff; color: #004085; }
+        .status-completed { background: #d4edda; color: #155724; }
+        .status-closed { background: #e2e3e5; color: #636c72; }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('user_frontend.dashboard') }}">
+                <i class="bi bi-building"></i> 无人茶室
+            </a>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('user_frontend.dashboard') }}">首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('user_frontend.rooms') }}">茶室列表</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('user_frontend.orders') }}">我的订单</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('user_frontend.repair_list') }}">设施报修</a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('user_frontend.profile') }}">
+                            <i class="bi bi-person"></i> {{ session.get('username', '用户') }}
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('user_frontend.logout') }}">退出登录</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-wrench"></i> 我的报修</h2>
+            <a href="{{ url_for('user_frontend.repair_submit') }}" class="btn btn-primary">
+                <i class="bi bi-plus"></i> 提交报修
+            </a>
+        </div>
+
+        <!-- 状态筛选 -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="flex-wrap gap-2">
+                    <a href="{{ url_for('user_frontend.repair_list') }}" class="btn {% if not request.args.get('status') %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                        全部
+                    </a>
+                    <a href="{{ url_for('user_frontend.repair_list', status='pending') }}" class="btn {% if request.args.get('status') == 'pending' %}btn-warning{% else %}btn-outline-warning{% endif %}">
+                        待处理
+                    </a>
+                    <a href="{{ url_for('user_frontend.repair_list', status='processing') }}" class="btn {% if request.args.get('status') == 'processing' %}btn-info{% else %}btn-outline-info{% endif %}">
+                        处理中
+                    </a>
+                    <a href="{{ url_for('user_frontend.repair_list', status='completed') }}" class="btn {% if request.args.get('status') == 'completed' %}btn-success{% else %}btn-outline-success{% endif %}">
+                        已完成
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 报修列表 -->
+        <div class="card">
+            <div class="card-body">
+                {% if repairs %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>工单ID</th>
+                                <th>茶室</th>
+                                <th>故障标题</th>
+                                <th>状态</th>
+                                <th>提交时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for repair in repairs %}
+                            <tr>
+                                <td>{{ repair.id }}</td>
+                                <td>{{ repair.room_name or '未知' }}</td>
+                                <td>{{ repair.title }}</td>
+                                <td>
+                                    <span class="badge {% if repair.status == 'pending' %}bg-warning{% elif repair.status == 'processing' %}bg-info{% else %}bg-success{% endif %}">
+                                        {{ '待处理' if repair.status == 'pending' else '处理中' if repair.status == 'processing' else '已完成' }}
+                                    </span>
+                                </td>
+                                <td>{{ repair.created_at.strftime('%Y-%m-%d %H:%M') if repair.created_at else '' }}</td>
+                                <td>
+                                    <button class="btn btn-primary btn-sm" onclick="viewRepair({{ repair.id }})">
+                                        <i class="bi bi-eye"></i> 查看详情
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 分页 -->
+                {% if total_pages > 1 %}
+                <nav class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if page > 1 %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('user_frontend.repair_list', page=page-1, **request.args) }}">上一页</a>
+                        </li>
+                        {% endif %}
+                        {% for p in range(1, total_pages + 1) %}
+                        <li class="page-item {% if p == page %}active{% endif %}">
+                            <a class="page-link" href="{{ url_for('user_frontend.repair_list', page=p, **request.args) }}">{{ p }}</a>
+                        </li>
+                        {% endfor %}
+                        {% if page < total_pages %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('user_frontend.repair_list', page=page+1, **request.args) }}">下一页</a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-wrench fs-1 text-muted"></i>
+                    <p class="mt-3 text-muted">暂无报修记录</p>
+                    <a href="{{ url_for('user_frontend.repair_submit') }}" class="btn btn-primary">提交报修</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- 详情模态框 -->
+    <div class="modal fade" id="repairModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-wrench"></i> 报修详情</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="repairDetail">
+                    <!-- 动态内容 -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function viewRepair(repairId) {
+            fetch(`/api/repairs/${repairId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.code === 200) {
+                        const r = data.data;
+                        let imagesHtml = '';
+                        if (r.images && r.images.length > 0) {
+                            imagesHtml = `<div class="mb-3">
+                                <label class="text-muted small">故障图片</label>
+                                <div class="row">`;
+                            r.images.forEach(img => {
+                                imagesHtml += `<div class="col-md-4 mb-2">
+                                    <img src="${img}" class="img-fluid rounded" style="max-height: 150px; object-fit: cover;" onclick="previewImage('${img}')">
+                                </div>`;
+                            });
+                            imagesHtml += `</div></div>`;
+                        }
+                        
+                        document.getElementById('repairDetail').innerHTML = `
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="text-muted small">工单编号</label>
+                                    <div class="form-control-plaintext font-weight-bold">#${r.id}</div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="text-muted small">提交时间</label>
+                                    <div class="form-control-plaintext">${r.created_at || '-'}</div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="text-muted small">当前状态</label>
+                                    <span class="badge ${r.status === 'pending' ? 'bg-warning' : r.status === 'processing' ? 'bg-info' : r.status === 'completed' ? 'bg-success' : 'bg-secondary'}">
+                                        ${r.status === 'pending' ? '待处理' : r.status === 'processing' ? '处理中' : r.status === 'completed' ? '已完成' : '已关闭'}
+                                    </span>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="text-muted small">优先级</label>
+                                    <span class="badge ${r.priority === 'high' ? 'bg-danger' : r.priority === 'normal' ? 'bg-secondary' : 'bg-info'}">
+                                        ${r.priority === 'high' ? '紧急' : r.priority === 'normal' ? '一般' : '低'}
+                                    </span>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="text-muted small">所属茶室</label>
+                                    <div class="form-control-plaintext">${r.room_name || '未知'}</div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="text-muted small">关联订单</label>
+                                    <div class="form-control-plaintext">${r.order_no || '-'}</div>
+                                </div>
+                                <div class="col-12 mb-3">
+                                    <label class="text-muted small">故障标题</label>
+                                    <div class="form-control-plaintext">${r.title}</div>
+                                </div>
+                                <div class="col-12 mb-3">
+                                    <label class="text-muted small">详细描述</label>
+                                    <div class="p-3 bg-light rounded">${r.description}</div>
+                                </div>
+                                ${imagesHtml}
+                                ${r.handler_remark ? `<div class="col-12 mb-3">
+                                    <label class="text-muted small">处理备注</label>
+                                    <div class="p-3 bg-success bg-opacity-10 rounded border border-success">${r.handler_remark}</div>
+                                </div>` : ''}
+                            </div>
+                        `;
+                        
+                        new bootstrap.Modal(document.getElementById('repairModal')).show();
+                    } else {
+                        alert(data.message || '获取详情失败');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('获取详情失败');
+                });
+        }
+
+        function previewImage(src) {
+            const modal = document.createElement('div');
+            modal.className = 'modal fade';
+            modal.innerHTML = `
+                <div class="modal-dialog modal-xl">
+                    <div class="modal-content">
+                        <div class="modal-body text-center">
+                            <img src="${src}" class="img-fluid">
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            const bsModal = new bootstrap.Modal(modal);
+            bsModal.show();
+            modal.addEventListener('hidden.bs.modal', () => modal.remove());
+        }
+    </script>
+</body>
+</html>

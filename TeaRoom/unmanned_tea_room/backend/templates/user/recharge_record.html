@@ -1,0 +1,52 @@
+{% extends "admin/base.html" %}
+
+{% block title %}充值记录 - 无人茶室管理系统{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2>充值记录</h2>
+            <p class="text-muted">查看您的所有充值记录</p>
+        </div>
+    </div>
+
+    <!-- 充值记录表格 -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>充值时间</th>
+                            <th>充值金额</th>
+                            <th>支付方式</th>
+                            <th>状态</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if recharge_records %}
+                            {% for record in recharge_records %}
+                            <tr>
+                                <td>{{ record.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                                <td class="text-primary">¥{{ record.amount|round(2) }}</td>
+                                <td>{{ record.payment_method }}</td>
+                                <td>
+                                    <span class="badge bg-success">
+                                        {{ '充值成功' if record.status == 'success' else record.status }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center">暂无充值记录</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

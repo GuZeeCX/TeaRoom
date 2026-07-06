@@ -1,0 +1,52 @@
+{% extends "admin/base.html" %}
+
+{% block title %}编辑信息 - 无人茶室管理系统{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2>编辑个人信息</h2>
+            <p class="text-muted">修改您的基本信息</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <form method="POST" action="/user/profile/edit">
+                        <div class="mb-3">
+                            <label for="real_name" class="form-label">真实姓名</label>
+                            <input type="text" class="form-control" id="real_name" name="real_name" value="{{ user.real_name }}" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="email" class="form-label">邮箱</label>
+                            <input type="email" class="form-control" id="email" name="email" value="{{ user.email or '' }}">
+                            <div class="form-text">选填</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">用户名</label>
+                            <input type="text" class="form-control" value="{{ user.username }}" disabled>
+                            <div class="form-text">用户名不可修改</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">手机号</label>
+                            <input type="text" class="form-control" value="{{ user.phone }}" disabled>
+                            <div class="form-text">手机号不可修改</div>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">保存修改</button>
+                            <a href="/user/profile" class="btn btn-outline-secondary">取消</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

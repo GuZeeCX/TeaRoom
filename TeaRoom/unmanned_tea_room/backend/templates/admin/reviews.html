@@ -1,0 +1,333 @@
+{% extends "admin/base.html" %}
+
+{% block title %}评价管理 - 无人茶室管理系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-chat-dots"></i> 评价管理</h2>
+</div>
+
+<!-- 统计卡片 -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="stat-card" style="background: linear-gradient(135deg, var(--primary-color), var(--accent-color));">
+            <div class="d-flex justify-content-between">
+                <div>
+                    <div class="stat-number" style="color: white;" id="totalCount">{{ statistics.total_count if statistics else 0 }}</div>
+                    <small style="color: rgba(255,255,255,0.8);">总评价数</small>
+                </div>
+                <i class="bi bi-chat-dots fs-1" style="color: rgba(255,255,255,0.5);"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card" style="background: linear-gradient(135deg, #ffc107, #ffdb0d);">
+            <div class="d-flex justify-content-between">
+                <div>
+                    <div class="stat-number" style="color: var(--dark-color);" id="avgRating">{{ statistics.average_rating if statistics else '0.0' }}</div>
+                    <small style="color: var(--dark-color);">平均评分</small>
+                </div>
+                <i class="bi bi-star-fill fs-1" style="color: rgba(0,0,0,0.2);"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card" style="background: linear-gradient(135deg, #28a745, #20c997);">
+            <div class="d-flex justify-content-between">
+                <div>
+                    <div class="stat-number" style="color: white;" id="fiveStarCount">{{ statistics.rating_distribution.get(5, 0) if statistics else 0 }}</div>
+                    <small style="color: rgba(255,255,255,0.8);">五星好评</small>
+                </div>
+                <i class="bi bi-heart-fill fs-1" style="color: rgba(255,255,255,0.5);"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 星级分布 -->
+<div class="card mb-4">
+    <div class="card-header bg-white">
+        <h5 class="mb-0"><i class="bi bi-bar-chart"></i> 星级分布</h5>
+    </div>
+    <div class="card-body">
+        {% for rating in [5, 4, 3, 2, 1] %}
+        <div class="d-flex align-items-center mb-3 gap-3">
+            <span style="width: 60px;">{{ rating }}星</span>
+            <div class="progress flex-grow-1" style="height: 20px; background: #e9ecef; border-radius: 10px;">
+                <div class="progress-bar" style="background: linear-gradient(135deg, #ffc107, #ffdb0d); border-radius: 10px; width: {% if statistics and statistics.rating_distribution %}{{ (statistics.rating_distribution.get(rating, 0) / statistics.total_count * 100) if statistics.total_count > 0 else 0 }}{% else %}0{% endif %}%"></div>
+            </div>
+            <span style="width: 60px; text-align: right;">{{ statistics.rating_distribution.get(rating, 0) if statistics else 0 }}条</span>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- 筛选区 -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('admin.reviews') }}" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">茶室筛选</label>
+                <select class="form-select" name="room_id">
+                    <option value="">全部茶室</option>
+                    {% for room in rooms %}
+                    <option value="{{ room.id }}" {% if request.args.get('room_id') == room.id|string %}selected{% endif %}>
+                        {{ room.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">星级筛选</label>
+                <select class="form-select" name="rating">
+                    <option value="">全部</option>
+                    <option value="5" {% if request.args.get('rating') == '5' %}selected{% endif %}>5星</option>
+                    <option value="4" {% if request.args.get('rating') == '4' %}selected{% endif %}>4星</option>
+                    <option value="3" {% if request.args.get('rating') == '3' %}selected{% endif %}>3星</option>
+                    <option value="2" {% if request.args.get('rating') == '2' %}selected{% endif %}>2星</option>
+                    <option value="1" {% if request.args.get('rating') == '1' %}selected{% endif %}>1星</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">开始日期</label>
+                <input type="date" class="form-control" name="start_date" value="{{ request.args.get('start_date', '') }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">结束日期</label>
+                <input type="date" class="form-control" name="end_date" value="{{ request.args.get('end_date', '') }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">关键词搜索</label>
+                <input type="text" class="form-control" name="keyword" value="{{ request.args.get('keyword', '') }}" placeholder="用户昵称/评论内容">
+            </div>
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-search"></i> 查询
+                </button>
+                <a href="{{ url_for('admin.reviews') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-counterclockwise"></i> 重置
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 评价列表 -->
+<div class="card">
+    <div class="card-header bg-white">
+        <h5 class="mb-0"><i class="bi bi-list"></i> 评价列表</h5>
+    </div>
+    <div class="card-body">
+        {% if reviews %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>用户昵称</th>
+                        <th>茶室名称</th>
+                        <th>关联订单号</th>
+                        <th>星级</th>
+                        <th>评价时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for review in reviews %}
+                    <tr>
+                        <td>{{ review.id }}</td>
+                        <td>{{ review.user_real_name or review.username or '匿名' }}</td>
+                        <td>{{ review.room_name or '未知茶室' }}</td>
+                        <td>{{ review.order_no or '未知订单' }}</td>
+                        <td>
+                            <span style="color: #ffc107; font-size: 18px;">
+                                {% for i in range(5) %}
+                                {% if i < review.rating %}★{% else %}☆{% endif %}
+                                {% endfor %}
+                            </span>
+                        </td>
+                        <td>{{ review.created_at.strftime('%Y-%m-%d %H:%M') if review.created_at else '' }}</td>
+                        <td>
+                            <button class="btn btn-primary btn-sm me-2" onclick="viewReview({{ review.id }})">
+                                <i class="bi bi-eye"></i> 查看详情
+                            </button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteReview({{ review.id }})">
+                                <i class="bi bi-trash"></i> 删除
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 分页 -->
+        {% if total_pages > 1 %}
+        <nav class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if page > 1 %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('admin.reviews', page=page-1, **request.args) }}">上一页</a>
+                </li>
+                {% endif %}
+                
+                {% for p in range(1, total_pages + 1) %}
+                <li class="page-item {% if p == page %}active{% endif %}">
+                    <a class="page-link" href="{{ url_for('admin.reviews', page=p, **request.args) }}">{{ p }}</a>
+                </li>
+                {% endfor %}
+                
+                {% if page < total_pages %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('admin.reviews', page=page+1, **request.args) }}">下一页</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+        
+        {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-chat-dots fs-1 text-muted"></i>
+            <p class="mt-3 text-muted">暂无评价数据</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- 查看详情模态框 -->
+<div class="modal fade" id="viewReviewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-eye"></i> 评价详情</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small">评价ID</label>
+                        <div id="detail-id" class="form-control-plaintext font-weight-bold"></div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small">用户昵称</label>
+                        <div id="detail-username" class="form-control-plaintext"></div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small">茶室名称</label>
+                        <div id="detail-room" class="form-control-plaintext"></div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small">关联订单号</label>
+                        <div id="detail-order" class="form-control-plaintext"></div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small">星级评分</label>
+                        <div id="detail-rating" class="form-control-plaintext h4" style="color: #ffc107;"></div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small">评价时间</label>
+                        <div id="detail-time" class="form-control-plaintext"></div>
+                    </div>
+                    <div class="col-12 mb-3">
+                        <label class="text-muted small">评论内容</label>
+                        <div id="detail-comment" class="p-3 bg-light rounded min-h-[100px]"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 删除确认模态框 -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-exclamation-triangle text-danger"></i> 确认删除</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>确认删除该评价？删除后无法恢复。</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+                    <i class="bi bi-trash"></i> 确认删除
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let deleteReviewId = null;
+
+    function viewReview(reviewId) {
+        fetch(`/api/reviews/${reviewId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.code === 200) {
+                    const review = data.data;
+                    document.getElementById('detail-id').textContent = review.id;
+                    document.getElementById('detail-username').textContent = review.user_real_name || review.username || '匿名';
+                    document.getElementById('detail-room').textContent = review.room_name || '未知茶室';
+                    document.getElementById('detail-order').textContent = review.order_no || '未知订单';
+                    
+                    // 星级显示
+                    let stars = '';
+                    for (let i = 0; i < 5; i++) {
+                        stars += i < review.rating ? '★' : '☆';
+                    }
+                    document.getElementById('detail-rating').innerHTML = stars + ' <span style="color: #6c757d; font-size: 16px;">' + review.rating + '星</span>';
+                    
+                    document.getElementById('detail-time').textContent = review.created_at || '-';
+                    document.getElementById('detail-comment').textContent = review.comment || '用户未填写文字评论';
+                    
+                    new bootstrap.Modal(document.getElementById('viewReviewModal')).show();
+                } else {
+                    alert(data.message || '获取评价详情失败');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('获取评价详情失败');
+            });
+    }
+
+    function deleteReview(reviewId) {
+        deleteReviewId = reviewId;
+        new bootstrap.Modal(document.getElementById('deleteModal')).show();
+    }
+
+    document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+        if (!deleteReviewId) return;
+        
+        fetch(`/api/reviews/admin/${deleteReviewId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.code === 200) {
+                alert('删除成功');
+                bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();
+                location.reload();
+            } else {
+                alert(data.message || '删除失败');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('删除失败，请稍后重试');
+        });
+    });
+</script>
+{% endblock %}

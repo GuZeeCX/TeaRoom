@@ -1,0 +1,131 @@
+{% extends "admin/base.html" %}
+
+{% block title %}用户详情 - 无人茶室管理系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>用户详情</h2>
+    <a href="{{ url_for('admin.users') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i>
+        返回列表
+    </a>
+</div>
+
+<!-- 用户信息 -->
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title mb-4">基本信息</h5>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="text-muted small">用户ID</label>
+                <div class="h5">{{ user.id }}</div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="text-muted small">用户名</label>
+                <div class="h5">{{ user.username }}</div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="text-muted small">真实姓名</label>
+                <div class="h5">{{ user.real_name }}</div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="text-muted small">手机号</label>
+                <div class="h5">{{ user.phone }}</div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="text-muted small">邮箱</label>
+                <div>{{ user.email or '-' }}</div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="text-muted small">状态</label>
+                <div>
+                    <span class="badge bg-{{ 'success' if user.is_active else 'danger' }}">
+                        {{ '启用' if user.is_active else '禁用' }}
+                    </span>
+                </div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="text-muted small">注册时间</label>
+                <div>{{ user.created_at.strftime('%Y-%m-%d %H:%M:%S') if user.created_at else '-' }}</div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="text-muted small">最后登录</label>
+                <div>{{ user.last_login.strftime('%Y-%m-%d %H:%M:%S') if user.last_login else '从未登录' }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 用户操作 -->
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title mb-4">用户操作</h5>
+        <div class="d-grid gap-2" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+            <form method="POST" action="{{ url_for('admin.toggle_user', user_id=user.id) }}">
+                <button type="submit" class="btn btn-outline-{{ 'danger' if user.is_active else 'success' }}">
+                    <i class="bi bi-{{ 'x-lg' if user.is_active else 'check-lg' }}"></i>
+                    {{ '禁用用户' if user.is_active else '启用用户' }}
+                </button>
+            </form>
+            <a href="{{ url_for('admin.users') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i>
+                返回列表
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- 用户订单 -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">最近订单</h5>
+        <small class="text-muted">显示最近10条订单</small>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>订单号</th>
+                        <th>房间</th>
+                        <th>开始时间</th>
+                        <th>时长</th>
+                        <th>金额</th>
+                        <th>状态</th>
+                        <th>创建时间</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in user_orders %}
+                    <tr>
+                        <td>{{ order.order_no }}</td>
+                        <td>{{ order.room.name if order.room else '-' }}</td>
+                        <td>{{ order.start_time.strftime('%Y-%m-%d %H:%M') if order.start_time else '-' }}</td>
+                        <td>{{ order.duration_hours }}小时</td>
+                        <td>¥{{ order.total_amount|round(2) }}</td>
+                        <td>
+                            <span class="badge badge-{{ order.status }}">
+                                {% if order.status == 'pending' %}待确认
+                                {% elif order.status == 'confirmed' %}已确认
+                                {% elif order.status == 'in_use' %}使用中
+                                {% elif order.status == 'completed' %}已完成
+                                {% elif order.status == 'cancelled' %}已取消
+                                {% endif %}
+                            </span>
+                        </td>
+                        <td>{{ order.created_at.strftime('%Y-%m-%d %H:%M') if order.created_at else '-' }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">
+                            <i class="bi bi-inbox" style="font-size: 48px;"></i>
+                            <p class="mt-2">暂无订单数据</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

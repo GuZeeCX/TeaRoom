@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}无人茶室管理系统{% endblock %}</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.bootcdn.net/ajax/libs/bootstrap-icons/1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        /* 茶色系配色方案 */
+        :root {
+            --primary-color: #8B4513; /* 棕色 */
+            --secondary-color: #D2B48C; /* 棕褐色 */
+            --accent-color: #A0522D; /* 红棕色 */
+            --light-color: #F5F5DC; /* 米色 */
+            --dark-color: #3E2723; /* 深棕色 */
+            --success-color: #2E7D32; /* 绿色 */
+            --danger-color: #C62828; /* 红色 */
+            --warning-color: #FFA000; /* 橙色 */
+            --info-color: #0288D1; /* 蓝色 */
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--light-color);
+            padding-top: 70px; /* 为顶部导航栏留出空间 */
+            transition: all 0.3s ease;
+        }
+        
+        .sidebar {
+            min-height: calc(100vh - 70px); /* 减去顶部导航栏的高度 */
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+            color: white;
+        }
+        
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            padding: 12px 20px;
+            margin: 4px 8px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            transform: translateX(5px);
+        }
+        
+        .sidebar .nav-link i {
+            margin-right: 10px;
+        }
+        
+        .main-content {
+            padding: 20px;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+            margin-bottom: 20px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+            margin-bottom: 20px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .stat-card .icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-bottom: 15px;
+            background: var(--secondary-color);
+            color: var(--dark-color);
+        }
+        
+        .stat-card .value {
+            font-size: 28px;
+            font-weight: bold;
+            color: var(--dark-color);
+            margin-bottom: 5px;
+        }
+        
+        .stat-card .label {
+            color: var(--accent-color);
+            font-size: 14px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+            border: none;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(135deg, var(--accent-color) 0%, var(--primary-color) 100%);
+            transform: translateY(-2px);
+        }
+        
+        .btn-outline-primary {
+            color: var(--primary-color);
+            border-color: var(--primary-color);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-outline-primary:hover {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+            border-color: var(--primary-color);
+            color: white;
+        }
+        
+        .table {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .table thead th {
+            background: var(--light-color);
+            border-bottom: 2px solid var(--secondary-color);
+            font-weight: 600;
+            color: var(--dark-color);
+        }
+        
+        .table tbody tr:hover {
+            background-color: rgba(210, 180, 140, 0.1);
+        }
+        
+        .badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .badge-available {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .badge-occupied {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .badge-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .badge-confirmed {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .badge-in_use {
+            background: #cce5ff;
+            color: #004085;
+        }
+        
+        .badge-completed {
+            background: #e2e3e5;
+            color: #383d41;
+        }
+        
+        .badge-cancelled {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .pagination .page-link {
+            color: var(--primary-color);
+            border: none;
+            margin: 0 5px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .pagination .page-link:hover {
+            background: var(--secondary-color);
+            color: var(--dark-color);
+        }
+        
+        .pagination .page-item.active .page-link {
+            background: var(--primary-color);
+            color: white;
+        }
+        
+        .alert {
+            border-radius: 12px;
+            border: none;
+        }
+        
+        /* 顶部导航栏样式 */
+        .top-navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: var(--primary-color);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .top-navbar .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 500;
+            padding: 0.75rem 1rem;
+            margin: 0 0.5rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .top-navbar .nav-link:hover,
+        .top-navbar .nav-link.active {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+        
+        .top-navbar .navbar-brand {
+            font-weight: bold;
+            color: white;
+        }
+        
+        /* 表单元素 */
+        .form-control {
+            border-radius: 4px;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(139, 69, 19, 0.25);
+        }
+        
+        /* 网格布局 */
+        .grid {
+            display: grid;
+        }
+        
+        .grid-cols-4 {
+            grid-template-columns: repeat(4, 1fr);
+        }
+        
+        .gap-2 {
+            gap: 0.5rem;
+        }
+        
+        /* 响应式网格 */
+        @media (max-width: 768px) {
+            .grid-cols-4 {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        /* 暗色模式 */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --light-color: #2C2C2C;
+                --dark-color: #1A1A1A;
+                --secondary-color: #5D4037;
+            }
+            
+            body {
+                background-color: var(--light-color);
+                color: #E0E0E0;
+            }
+            
+            .card,
+            .stat-card,
+            .table {
+                background-color: var(--dark-color);
+                color: #E0E0E0;
+            }
+            
+            .table thead th {
+                background: var(--light-color);
+                color: #E0E0E0;
+            }
+            
+            .stat-card .value {
+                color: #E0E0E0;
+            }
+            
+            .form-control {
+                background-color: var(--dark-color);
+                color: #E0E0E0;
+                border-color: #444;
+            }
+        }
+    </style>
+</head>
+<body>
+    {% if session.get('admin_id') or session.get('user_id') %}
+    <!-- 顶部导航栏 -->
+    <nav class="navbar navbar-expand-lg top-navbar">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{% if session.get('admin_id') %}{{ url_for('admin.dashboard') }}{% else %}{{ url_for('user_frontend.dashboard') }}{% endif %}">
+                <i class="bi bi-building"></i> 无人茶室管理系统
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    {% if not session.get('admin_id') %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'user_frontend.rooms' %}active{% endif %}" href="{{ url_for('user_frontend.rooms') }}">
+                            <i class="bi bi-door-open"></i> 茶室列表
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'user_frontend.orders' %}active{% endif %}" href="{{ url_for('user_frontend.orders') }}">
+                            <i class="bi bi-receipt"></i> 我的订单
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'user_frontend.profile' %}active{% endif %}" href="{{ url_for('user_frontend.profile') }}">
+                            <i class="bi bi-person"></i> 个人中心
+                        </a>
+                    </li>
+                    {% endif %}
+                    <li class="nav-item">
+                        <a class="nav-link text-danger fw-bold" href="{% if session.get('admin_id') %}{{ url_for('admin.logout') }}{% else %}{{ url_for('user_frontend.logout') }}{% endif %}">
+                            <i class="bi bi-box-arrow-right"></i> 退出登录
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container-fluid">
+        <div class="row">
+            <!-- 侧边栏 -->
+            <div class="col-md-2 sidebar p-0">
+                <div class="p-4">
+                    <h5 class="mb-4">
+                        <i class="bi bi-building"></i>
+                        无人茶室
+                    </h5>
+                    <nav class="nav flex-column">
+                        {% if session.get('admin_id') %}
+                        <a class="nav-link {% if request.endpoint == 'admin.dashboard' %}active{% endif %}" href="{{ url_for('admin.dashboard') }}">
+                            <i class="bi bi-speedometer2"></i>
+                            管理首页
+                        </a>
+                        <a class="nav-link {% if request.endpoint in ['admin.rooms', 'admin.add_room', 'admin.edit_room'] %}active{% endif %}" href="{{ url_for('admin.rooms') }}">
+                            <i class="bi bi-door-open"></i>
+                            房间管理
+                        </a>
+                        <a class="nav-link {% if request.endpoint in ['admin.orders', 'admin.order_detail'] %}active{% endif %}" href="{{ url_for('admin.orders') }}">
+                            <i class="bi bi-receipt"></i>
+                            订单管理
+                        </a>
+                        <a class="nav-link {% if request.endpoint in ['admin.reviews'] %}active{% endif %}" href="{{ url_for('admin.reviews') }}">
+                            <i class="bi bi-chat-dots"></i>
+                            评价管理
+                        </a>
+                        <a class="nav-link {% if request.endpoint in ['admin.repairs'] %}active{% endif %}" href="{{ url_for('admin.repairs') }}">
+                            <i class="bi bi-wrench"></i>
+                            维修管理
+                        </a>
+                        <a class="nav-link {% if request.endpoint in ['admin.users', 'admin.user_detail'] %}active{% endif %}" href="{{ url_for('admin.users') }}">
+                            <i class="bi bi-people"></i>
+                            用户管理
+                        </a>
+                        <a class="nav-link {% if request.endpoint == 'admin.statistics' %}active{% endif %}" href="{{ url_for('admin.statistics') }}">
+                            <i class="bi bi-graph-up"></i>
+                            数据统计
+                        </a>
+                        <a class="nav-link {% if request.endpoint == 'admin.settings' %}active{% endif %}" href="{{ url_for('admin.settings') }}">
+                            <i class="bi bi-gear"></i>
+                            系统设置
+                        </a>
+                        {% else %}
+                        <a class="nav-link {% if request.endpoint == 'user_frontend.dashboard' %}active{% endif %}" href="{{ url_for('user_frontend.dashboard') }}">
+                            <i class="bi bi-speedometer2"></i>
+                            首页
+                        </a>
+                        <a class="nav-link {% if request.endpoint == 'user_frontend.rooms' %}active{% endif %}" href="{{ url_for('user_frontend.rooms') }}">
+                            <i class="bi bi-door-open"></i>
+                            茶室列表
+                        </a>
+                        <a class="nav-link {% if request.endpoint == 'user_frontend.recharge' %}active{% endif %}" href="{{ url_for('user_frontend.recharge') }}">
+                            <i class="bi bi-credit-card"></i>
+                            账户充值
+                        </a>
+                        <a class="nav-link {% if request.endpoint == 'user_frontend.member_recharge' %}active{% endif %}" href="{{ url_for('user_frontend.member_recharge') }}">
+                            <i class="bi bi-gem"></i>
+                            会员充值
+                        </a>
+                        <a class="nav-link {% if request.endpoint == 'user_frontend.teas' %}active{% endif %}" href="{{ url_for('user_frontend.teas') }}">
+                            <i class="bi bi-cup"></i>
+                            茶叶种类
+                        </a>
+                        <a class="nav-link {% if request.endpoint in ['user_frontend.repair_list', 'user_frontend.repair_submit'] %}active{% endif %}" href="{{ url_for('user_frontend.repair_list') }}">
+                            <i class="bi bi-wrench"></i>
+                            设施报修
+                        </a>
+                        <a class="nav-link {% if request.endpoint == 'user_frontend.profile' %}active{% endif %}" href="{{ url_for('user_frontend.profile') }}">
+                            <i class="bi bi-person"></i>
+                            个人中心
+                        </a>
+                        {% endif %}
+                    </nav>
+                </div>
+            </div>
+            
+            <!-- 主内容区 -->
+            <div class="col-md-10 main-content">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+                
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        {% block login_content %}{% endblock %}
+    </div>
+    {% endif %}
+    
+    <script src="https://cdn.bootcdn.net/ajax/libs/bootstrap/5.1.3/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

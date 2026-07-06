@@ -1,0 +1,739 @@
+{% extends "admin/base.html" %}
+
+{% block title %}预约茶室 - 无人茶室管理系统{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2>预约茶室</h2>
+            <p class="text-muted">选择预约时间和时段</p>
+        </div>
+    </div>
+
+    <!-- 茶室信息 -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">{{ room.name }}</h5>
+            <p class="card-text">
+                <i class="bi bi-people"></i> 容纳人数: {{ room.capacity }}人<br>
+                <i class="bi bi-clock"></i> 小时单价: ¥{{ room.price_per_hour }}<br>
+                <i class="bi bi-calendar-check"></i> 状态: 
+                <span class="badge {% if room.status == 'available' %}bg-success{% else %}bg-danger{% endif %}">
+                    {{ '可用' if room.status == 'available' else '占用' }}
+                </span>
+            </p>
+        </div>
+    </div>
+
+    <!-- 预约表单 -->
+    <div class="card">
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('user_frontend.reserve', room_id=room.id) }}">
+                <div class="mb-3">
+                    <label for="username" class="form-label">用户名</label>
+                    <input type="text" class="form-control" id="username" name="username" value="{{ user.username }}" readonly>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="real_name" class="form-label">真实姓名</label>
+                    <input type="text" class="form-control" id="real_name" name="real_name" value="{{ user.real_name }}" readonly>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="phone" class="form-label">联系电话</label>
+                    <input type="text" class="form-control" id="phone" name="phone" value="{{ user.phone }}" readonly>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">预约日期</label>
+                    <div class="row g-2 mb-2">
+                        <div class="col-auto">
+                            <button type="button" class="btn btn-outline-primary" onclick="selectDate('today')">今日</button>
+                        </div>
+                        <div class="col-auto">
+                            <button type="button" class="btn btn-outline-primary" onclick="selectDate('tomorrow')">明日</button>
+                        </div>
+                        <div class="col-auto">
+                            <button type="button" class="btn btn-outline-primary" onclick="selectDate('week')">本周</button>
+                        </div>
+                    </div>
+                    <input type="date" class="form-control" id="date" name="date" required min="{{ today }}">
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">开始时间</label>
+                    <div class="grid grid-cols-4 gap-2" id="start-time-slots">
+                        <!-- 时段选项将通过JavaScript生成 -->
+                    </div>
+                    <input type="hidden" id="start_time" name="start_time" required>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">结束时间</label>
+                    <div class="grid grid-cols-4 gap-2" id="end-time-slots">
+                        <!-- 时段选项将通过JavaScript生成 -->
+                    </div>
+                    <input type="hidden" id="end_time" name="end_time" required>
+                </div>
+                
+                <!-- 茶叶选择 -->
+                <div class="mb-3">
+                    <label class="form-label">选择茶叶（10种精选茗茶）</label>
+                    <div class="tea-selection">
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <div class="tea-option" data-tea="自带茶叶" data-price="0">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="tea_type" id="tea_bring" value="自带茶叶" checked>
+                                        <label class="form-check-label" for="tea_bring">
+                                            <strong>自带茶叶</strong>
+                                            <small class="text-muted d-block">您可自带喜爱的茶叶</small>
+                                            <span class="badge bg-success">免费</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="tea-option" data-tea="西湖龙井" data-price="15">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="tea_type" id="tea_longjing" value="西湖龙井">
+                                        <label class="form-check-label" for="tea_longjing">
+                                            <strong>西湖龙井</strong>
+                                            <small class="text-muted d-block">中国十大名茶之首，清香甘醇</small>
+                                            <span class="badge bg-warning text-dark">+¥15</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="tea-option" data-tea="安溪铁观音" data-price="12">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="tea_type" id="tea_tieguanyin" value="安溪铁观音">
+                                        <label class="form-check-label" for="tea_tieguanyin">
+                                            <strong>安溪铁观音</strong>
+                                            <small class="text-muted d-block">乌龙茶代表，兰花香气</small>
+                                            <span class="badge bg-warning text-dark">+¥12</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="tea-option" data-tea="武夷大红袍" data-price="18">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="tea_type" id="tea_dahongpao" value="武夷大红袍">
+                                        <label class="form-check-label" for="tea_dahongpao">
+                                            <strong>武夷大红袍</strong>
+                                            <small class="text-muted d-block">岩茶之王，醇厚回甘</small>
+                                            <span class="badge bg-warning text-dark">+¥18</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="tea-option" data-tea="云南普洱" data-price="16">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="tea_type" id="tea_puer" value="云南普洱">
+                                        <label class="form-check-label" for="tea_puer">
+                                            <strong>云南普洱</strong>
+                                            <small class="text-muted d-block">后发酵茶，陈香浓郁</small>
+                                            <span class="badge bg-warning text-dark">+¥16</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="tea-option" data-tea="洞庭碧螺春" data-price="14">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="tea_type" id="tea_biluochun" value="洞庭碧螺春">
+                                        <label class="form-check-label" for="tea_biluochun">
+                                            <strong>洞庭碧螺春</strong>
+                                            <small class="text-muted d-block">绿茶珍品，花果香气</small>
+                                            <span class="badge bg-warning text-dark">+¥14</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="tea-option" data-tea="黄山毛峰" data-price="13">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="tea_type" id="tea_maofeng" value="黄山毛峰">
+                                        <label class="form-check-label" for="tea_maofeng">
+                                            <strong>黄山毛峰</strong>
+                                            <small class="text-muted d-block">徽茶代表，清香持久</small>
+                                            <span class="badge bg-warning text-dark">+¥13</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="tea-option" data-tea="君山银针" data-price="20">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="tea_type" id="tea_yinzhen" value="君山银针">
+                                        <label class="form-check-label" for="tea_yinzhen">
+                                            <strong>君山银针</strong>
+                                            <small class="text-muted d-block">黄茶极品，金镶玉色</small>
+                                            <span class="badge bg-warning text-dark">+¥20</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="tea-option" data-tea="福鼎白茶" data-price="10">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="tea_type" id="tea_baicha" value="福鼎白茶">
+                                        <label class="form-check-label" for="tea_baicha">
+                                            <strong>福鼎白茶</strong>
+                                            <small class="text-muted d-block">微发酵茶，清淡甘甜</small>
+                                            <span class="badge bg-warning text-dark">+¥10</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="tea-option" data-tea="正山小种" data-price="17">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="tea_type" id="tea_xiaozhong" value="正山小种">
+                                        <label class="form-check-label" for="tea_xiaozhong">
+                                            <strong>正山小种</strong>
+                                            <small class="text-muted d-block">红茶鼻祖，松烟香气</small>
+                                            <span class="badge bg-warning text-dark">+¥17</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 茶叶重量选择 -->
+                <div class="mb-3" id="tea-weight-section" style="display: none;">
+                    <label class="form-label">选择茶叶重量（按克计价）</label>
+                    <div class="tea-weight-selection">
+                        <div class="row g-2">
+                            <div class="col-md-3">
+                                <div class="weight-option" data-weight="5">
+                                    <input type="radio" class="form-check-input" name="tea_weight" id="weight_5" value="5">
+                                    <label class="form-check-label" for="weight_5">
+                                        <strong>5克</strong>
+                                        <small class="text-muted d-block">品鉴装</small>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="weight-option" data-weight="10">
+                                    <input type="radio" class="form-check-input" name="tea_weight" id="weight_10" value="10" checked>
+                                    <label class="form-check-label" for="weight_10">
+                                        <strong>10克</strong>
+                                        <small class="text-muted d-block">标准装</small>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="weight-option" data-weight="20">
+                                    <input type="radio" class="form-check-input" name="tea_weight" id="weight_20" value="20">
+                                    <label class="form-check-label" for="weight_20">
+                                        <strong>20克</strong>
+                                        <small class="text-muted d-block">分享装</small>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="weight-option" data-weight="50">
+                                    <input type="radio" class="form-check-input" name="tea_weight" id="weight_50" value="50">
+                                    <label class="form-check-label" for="weight_50">
+                                        <strong>50克</strong>
+                                        <small class="text-muted d-block">珍藏装</small>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <small class="form-text text-muted mt-2">
+                        已选茶叶：<span id="selected-tea-name">自带茶叶</span>，
+                        单价：<span id="selected-tea-unit-price">0</span>元/克，
+                        重量：<span id="selected-tea-weight">0</span>克
+                    </small>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">费用明细</label>
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>茶室费用：</span>
+                                <span>¥<span id="room_cost">0.00</span></span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>茶叶费用：</span>
+                                <span>¥<span id="tea_cost">0.00</span></span>
+                            </div>
+                            <hr>
+                            <div class="d-flex justify-content-between fw-bold">
+                                <span>预计总费用：</span>
+                                <span class="text-primary">¥<span id="estimated_cost">0.00</span></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 支付方式选择 -->
+                <div class="mb-3">
+                    <label class="form-label">支付方式</label>
+                    <div class="payment-selection">
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <div class="payment-option" data-type="immediate">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="payment_type" id="payment_immediate" value="immediate" checked>
+                                        <label class="form-check-label" for="payment_immediate">
+                                            <strong>立即支付</strong>
+                                            <small class="text-muted d-block">提交预约时直接支付费用</small>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="payment-option" data-type="postpay">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="payment_type" id="payment_postpay" value="postpay">
+                                        <label class="form-check-label" for="payment_postpay">
+                                            <strong>后付</strong>
+                                            <small class="text-muted d-block">使用完毕后支付费用</small>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">提交预约</button>
+                    <a href="{{ url_for('user_frontend.rooms') }}" class="btn btn-outline-secondary ms-2">返回列表</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+/* 茶叶选择样式 */
+.tea-selection {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 10px;
+}
+
+.tea-option {
+    background: white;
+    padding: 12px;
+    border-radius: 8px;
+    border: 2px solid #e9ecef;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.tea-option:hover {
+    border-color: #667eea;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+}
+
+.tea-option:has(input:checked) {
+    border-color: #667eea;
+    background: #f0f0ff;
+}
+
+.tea-option .form-check-label {
+    cursor: pointer;
+    width: 100%;
+}
+
+.tea-option .badge {
+    font-size: 12px;
+    padding: 4px 8px;
+}
+
+/* 费用明细样式 */
+.price-section .card {
+    border: none;
+}
+
+/* 茶叶重量选择样式 */
+.tea-weight-selection {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 10px;
+}
+
+.weight-option {
+    background: white;
+    padding: 12px;
+    border-radius: 8px;
+    border: 2px solid #e9ecef;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    text-align: center;
+    height: 100%;
+    min-height: 80px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.weight-option:hover {
+    border-color: #667eea;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+}
+
+.weight-option:has(input:checked) {
+    border-color: #667eea;
+    background: #f0f0ff;
+}
+
+/* 支付方式选择样式 */
+.payment-selection {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 10px;
+}
+
+.payment-option {
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    border: 2px solid #e9ecef;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.payment-option:hover {
+    border-color: #667eea;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+}
+
+.payment-option:has(input:checked) {
+    border-color: #667eea;
+    background: #f0f0ff;
+}
+
+.payment-option .form-check-label {
+    cursor: pointer;
+    width: 100%;
+}
+
+.weight-option input[type="radio"] {
+    display: none;
+}
+
+.weight-option .form-check-label {
+    cursor: pointer;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.weight-option strong {
+    font-size: 18px;
+    color: #333;
+    margin-bottom: 5px;
+}
+
+.weight-option small {
+    font-size: 12px;
+}
+</style>
+
+<script>
+// 已预约的时段（从后端获取）
+const bookedSlots = {{ booked_slots|tojson }};
+
+// 获取当前选择的日期
+function getSelectedDate() {
+    return document.getElementById('date').value;
+}
+
+// 根据当前选择的日期过滤已预约时段
+function getFilteredBookedSlots() {
+    const selectedDate = getSelectedDate();
+    return bookedSlots.filter(slot => slot.date === selectedDate);
+}
+
+// 生成时间段选项
+function generateTimeSlots(containerId, selectedTime, isEndTime = false) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = '';
+    
+    // 获取当前选择的日期对应的已预约时段
+    const filteredBookedSlots = getFilteredBookedSlots();
+    
+    // 获取当前选中的时间（用于保持结束时间的高亮状态）
+    const currentSelectedTime = document.getElementById(containerId === 'start-time-slots' ? 'start_time' : 'end_time').value;
+    
+    // 生成9:00到22:00的小时段
+    for (let hour = 9; hour < 22; hour++) {
+        const timeStr = `${hour.toString().padStart(2, '0')}:00`;
+        const slotBtn = document.createElement('button');
+        slotBtn.type = 'button';
+        slotBtn.className = 'btn btn-outline-secondary';
+        slotBtn.textContent = timeStr;
+        
+        // 检查是否已被预约
+        const isBooked = filteredBookedSlots.some(slot => {
+            return slot.start_time <= timeStr && slot.end_time > timeStr;
+        });
+        
+        if (isBooked) {
+            // 已预约时段：显示为红色/灰色，点击时提示
+            slotBtn.className = 'btn btn-danger';
+            slotBtn.title = '该时段已被预约';
+            slotBtn.style.opacity = '0.7';
+        }
+        
+        // 检查是否已选择
+        if (selectedTime === timeStr || currentSelectedTime === timeStr) {
+            if (!isBooked) {
+                slotBtn.className = 'btn btn-primary';
+            }
+        }
+        
+        // 添加点击事件
+        slotBtn.addEventListener('click', function() {
+            if (isBooked) {
+                // 点击已预约时段：直接提示用户
+                alert('该时段已被预约，请选择其他时段！');
+                return;
+            }
+            
+            // 清除同组其他按钮的选中状态
+            const buttons = container.querySelectorAll('button');
+            buttons.forEach(btn => {
+                // 只修改未预约时段的样式
+                const btnTime = btn.textContent;
+                const btnIsBooked = filteredBookedSlots.some(slot => {
+                    return slot.start_time <= btnTime && slot.end_time > btnTime;
+                });
+                if (!btnIsBooked) {
+                    btn.className = 'btn btn-outline-secondary';
+                }
+            });
+            
+            // 设置当前按钮为选中状态
+            this.className = 'btn btn-primary';
+            
+            // 更新隐藏输入框
+            const inputId = containerId === 'start-time-slots' ? 'start_time' : 'end_time';
+            document.getElementById(inputId).value = timeStr;
+            
+            // 重新计算费用
+            calculateCost();
+            
+            // 如果是开始时间，更新结束时间选项
+            if (!isEndTime) {
+                const endTimeInput = document.getElementById('end_time');
+                const endTimeSlots = document.getElementById('end-time-slots');
+                if (endTimeInput.value && endTimeInput.value <= timeStr) {
+                    endTimeInput.value = '';
+                    generateTimeSlots('end-time-slots', '');
+                } else {
+                    // 保持结束时间的高亮状态
+                    generateTimeSlots('end-time-slots', endTimeInput.value, true);
+                }
+            }
+        });
+        
+        container.appendChild(slotBtn);
+    }
+}
+
+// 日期快捷选择
+function selectDate(type) {
+    const dateInput = document.getElementById('date');
+    const today = new Date();
+    let selectedDate;
+    
+    switch(type) {
+        case 'today':
+            selectedDate = today;
+            break;
+        case 'tomorrow':
+            selectedDate = new Date(today);
+            selectedDate.setDate(today.getDate() + 1);
+            break;
+        case 'week':
+            selectedDate = new Date(today);
+            selectedDate.setDate(today.getDate() + 7);
+            break;
+    }
+    
+    const formattedDate = selectedDate.toISOString().split('T')[0];
+    dateInput.value = formattedDate;
+    
+    // 重置时间选择并重新生成时间槽（根据新日期过滤已预约时段）
+    document.getElementById('start_time').value = '';
+    document.getElementById('end_time').value = '';
+    generateTimeSlots('start-time-slots', '');
+    generateTimeSlots('end-time-slots', '');
+    document.getElementById('room_cost').textContent = '0.00';
+    document.getElementById('tea_cost').textContent = '0.00';
+    document.getElementById('estimated_cost').textContent = '0.00';
+}
+
+// 监听日期输入框变化
+document.addEventListener('DOMContentLoaded', function() {
+    const dateInput = document.getElementById('date');
+    if (dateInput) {
+        dateInput.addEventListener('change', function() {
+            // 日期变化时，重新生成时间槽（根据新日期过滤已预约时段）
+            document.getElementById('start_time').value = '';
+            document.getElementById('end_time').value = '';
+            generateTimeSlots('start-time-slots', '');
+            generateTimeSlots('end-time-slots', '');
+            document.getElementById('room_cost').textContent = '0.00';
+            document.getElementById('tea_cost').textContent = '0.00';
+            document.getElementById('estimated_cost').textContent = '0.00';
+        });
+    }
+});
+
+// 获取选中的茶叶单价（元/克）
+function getTeaUnitPrice() {
+    const selectedTea = document.querySelector('input[name="tea_type"]:checked');
+    if (selectedTea) {
+        // 将原来的价格转换为每克单价（假设原来价格是10克的价格）
+        const originalPrice = parseFloat(selectedTea.closest('.tea-option').dataset.price);
+        return originalPrice / 10; // 转换为每克单价
+    }
+    return 0;
+}
+
+// 获取选中的茶叶重量（克）
+function getTeaWeight() {
+    const selectedWeight = document.querySelector('input[name="tea_weight"]:checked');
+    if (selectedWeight) {
+        return parseFloat(selectedWeight.value);
+    }
+    return 0;
+}
+
+// 获取选中的茶叶名称
+function getTeaName() {
+    const selectedTea = document.querySelector('input[name="tea_type"]:checked');
+    if (selectedTea) {
+        return selectedTea.closest('.tea-option').dataset.tea;
+    }
+    return '自带茶叶';
+}
+
+// 更新茶叶重量选择区域显示
+function updateTeaWeightSection() {
+    const selectedTea = document.querySelector('input[name="tea_type"]:checked');
+    const weightSection = document.getElementById('tea-weight-section');
+    
+    if (selectedTea && selectedTea.value !== '自带茶叶') {
+        // 显示重量选择区域
+        weightSection.style.display = 'block';
+        
+        // 更新显示信息
+        const teaName = getTeaName();
+        const unitPrice = getTeaUnitPrice();
+        const weight = getTeaWeight();
+        
+        document.getElementById('selected-tea-name').textContent = teaName;
+        document.getElementById('selected-tea-unit-price').textContent = unitPrice.toFixed(2);
+        document.getElementById('selected-tea-weight').textContent = weight;
+    } else {
+        // 隐藏重量选择区域
+        weightSection.style.display = 'none';
+        
+        // 重置显示信息
+        document.getElementById('selected-tea-name').textContent = '自带茶叶';
+        document.getElementById('selected-tea-unit-price').textContent = '0';
+        document.getElementById('selected-tea-weight').textContent = '0';
+    }
+}
+
+// 计算预计费用
+function calculateCost() {
+    const start = document.getElementById('start_time').value;
+    const end = document.getElementById('end_time').value;
+    const pricePerHour = {{ room.price_per_hour }};
+    
+    if (start && end) {
+        const startParts = start.split(':');
+        const endParts = end.split(':');
+        const startTime = new Date(0, 0, 0, startParts[0], startParts[1]);
+        const endTime = new Date(0, 0, 0, endParts[0], endParts[1]);
+        
+        if (endTime <= startTime) {
+            alert('结束时间必须晚于开始时间');
+            document.getElementById('room_cost').textContent = '0.00';
+            document.getElementById('tea_cost').textContent = '0.00';
+            document.getElementById('estimated_cost').textContent = '0.00';
+            return;
+        }
+        
+        const hours = (endTime - startTime) / (1000 * 60 * 60);
+        const roomCost = hours * pricePerHour;
+        
+        // 计算茶叶费用（单价 × 重量）
+        const unitPrice = getTeaUnitPrice();
+        const weight = getTeaWeight();
+        const teaCost = unitPrice * weight;
+        
+        const totalCost = roomCost + teaCost;
+        
+        document.getElementById('room_cost').textContent = roomCost.toFixed(2);
+        document.getElementById('tea_cost').textContent = teaCost.toFixed(2);
+        document.getElementById('estimated_cost').textContent = totalCost.toFixed(2);
+        
+        // 更新茶叶信息显示
+        updateTeaWeightSection();
+    } else {
+        document.getElementById('room_cost').textContent = '0.00';
+        document.getElementById('tea_cost').textContent = '0.00';
+        document.getElementById('estimated_cost').textContent = '0.00';
+    }
+}
+
+// 页面加载时初始化
+window.onload = function() {
+    // 生成初始时间选项
+    generateTimeSlots('start-time-slots', '');
+    generateTimeSlots('end-time-slots', '');
+    
+    // 监听日期变化
+    document.getElementById('date').addEventListener('change', function() {
+        // 重置时间选择
+        document.getElementById('start_time').value = '';
+        document.getElementById('end_time').value = '';
+        generateTimeSlots('start-time-slots', '');
+        generateTimeSlots('end-time-slots', '');
+        document.getElementById('room_cost').textContent = '0.00';
+        document.getElementById('tea_cost').textContent = '0.00';
+        document.getElementById('estimated_cost').textContent = '0.00';
+    });
+    
+    // 监听茶叶选择变化
+    document.querySelectorAll('input[name="tea_type"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            updateTeaWeightSection();
+            calculateCost();
+        });
+    });
+    
+    // 监听茶叶重量选择变化
+    document.querySelectorAll('input[name="tea_weight"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            calculateCost();
+        });
+    });
+    
+    // 初始化茶叶重量选择区域
+    updateTeaWeightSection();
+};
+</script>
+{% endblock %}

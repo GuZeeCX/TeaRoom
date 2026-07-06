@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>提交报修 - 无人茶室</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary-color: #667eea;
+            --secondary-color: #764ba2;
+        }
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+        .navbar {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        }
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .upload-area {
+            border: 2px dashed #ddd;
+            border-radius: 12px;
+            transition: all 0.3s;
+        }
+        .upload-area:hover, .upload-area.dragover {
+            border-color: var(--primary-color);
+            background: rgba(102, 126, 234, 0.05);
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('user_frontend.dashboard') }}">
+                <i class="bi bi-building"></i> 无人茶室
+            </a>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('user_frontend.dashboard') }}">首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('user_frontend.rooms') }}">茶室列表</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('user_frontend.orders') }}">我的订单</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('user_frontend.repair_list') }}">设施报修</a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('user_frontend.profile') }}">
+                            <i class="bi bi-person"></i> {{ session.get('username', '用户') }}
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('user_frontend.logout') }}">退出登录</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="card">
+            <div class="card-header">
+                <h2><i class="bi bi-wrench"></i> 设施报修</h2>
+            </div>
+            <div class="card-body">
+                <form id="repairForm" enctype="multipart/form-data">
+                    <input type="hidden" id="order_id" name="order_id" value="{{ request.args.get('order_id', '') }}">
+                    
+                    <div class="mb-4">
+                        <label for="room_id" class="form-label">选择茶室 <span class="text-danger">*</span></label>
+                        <select class="form-select" id="room_id" name="room_id" required>
+                            <option value="">请选择茶室</option>
+                            {% for room in rooms %}
+                            <option value="{{ room.id }}" {% if request.args.get('room_id') == room.id|string %}selected{% endif %}>
+                                {{ room.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="title" class="form-label">故障标题 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="title" name="title" placeholder="简要描述故障问题（限50字）" maxlength="50" required>
+                        <div class="text-muted small mt-1" id="titleCount">0/50</div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label">优先级</label>
+                        <div class="flex-wrap gap-3">
+                            <label class="form-check-label">
+                                <input type="radio" name="priority" value="normal" checked class="form-check-input"> 一般
+                            </label>
+                            <label class="form-check-label">
+                                <input type="radio" name="priority" value="high" class="form-check-input"> 紧急
+                            </label>
+                            <label class="form-check-label">
+                                <input type="radio" name="priority" value="low" class="form-check-input"> 低
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="description" class="form-label">详细描述 <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="description" name="description" rows="4" placeholder="详细描述故障情况（限200字）" maxlength="200" required></textarea>
+                        <div class="text-muted small mt-1" id="descCount">0/200</div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label">故障图片（可选，最多3张）</label>
+                        <div class="border border-dashed rounded p-4 text-center" id="uploadArea">
+                            <input type="file" id="imageUpload" name="images" accept="image/jpeg,image/png" multiple class="d-none">
+                            <i class="bi bi-upload fs-3 text-muted"></i>
+                            <p class="text-muted mt-2">点击或拖拽上传图片</p>
+                            <p class="text-muted small">支持 jpg/png 格式，单张不超过2MB</p>
+                        </div>
+                        <div class="row mt-3" id="previewArea"></div>
+                        <div class="text-danger small mt-2" id="imageError"></div>
+                    </div>
+
+                    <div class="d-flex gap-3">
+                        <button type="button" class="btn btn-secondary" onclick="history.back()">取消</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-send"></i> 提交报修
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    const maxImages = 3;
+    const maxSize = 2 * 1024 * 1024;
+    let uploadedFiles = [];
+
+    document.getElementById('title').addEventListener('input', function() {
+        document.getElementById('titleCount').textContent = this.value.length + '/50';
+    });
+
+    document.getElementById('description').addEventListener('input', function() {
+        document.getElementById('descCount').textContent = this.value.length + '/200';
+    });
+
+    document.getElementById('uploadArea').addEventListener('click', function() {
+        document.getElementById('imageUpload').click();
+    });
+
+    document.getElementById('uploadArea').addEventListener('dragover', function(e) {
+        e.preventDefault();
+        this.classList.add('border-primary');
+    });
+
+    document.getElementById('uploadArea').addEventListener('dragleave', function() {
+        this.classList.remove('border-primary');
+    });
+
+    document.getElementById('uploadArea').addEventListener('drop', function(e) {
+        e.preventDefault();
+        this.classList.remove('border-primary');
+        handleFiles(e.dataTransfer.files);
+    });
+
+    document.getElementById('imageUpload').addEventListener('change', function(e) {
+        handleFiles(e.target.files);
+    });
+
+    function handleFiles(files) {
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            
+            if (uploadedFiles.length >= maxImages) {
+                alert(`最多只能上传${maxImages}张图片`);
+                return;
+            }
+            
+            if (file.size > maxSize) {
+                alert('单张图片大小不能超过2MB');
+                return;
+            }
+            
+            const validTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+            if (!validTypes.includes(file.type)) {
+                alert('图片格式仅限jpg/png');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                uploadedFiles.push(file);
+                addPreview(e.target.result, uploadedFiles.length - 1);
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    function addPreview(src, index) {
+        const preview = document.createElement('div');
+        preview.className = 'col-md-4 mb-2 position-relative';
+        preview.innerHTML = `
+            <img src="${src}" class="img-fluid rounded" style="max-height: 150px; object-fit: cover;">
+            <button type="button" class="btn btn-danger btn-sm position-absolute top-0 right-0" onclick="removeImage(${index})">
+                <i class="bi bi-x"></i>
+            </button>
+        `;
+        document.getElementById('previewArea').appendChild(preview);
+    }
+
+    function removeImage(index) {
+        uploadedFiles.splice(index, 1);
+        document.getElementById('previewArea').innerHTML = '';
+        uploadedFiles.forEach((file, i) => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                addPreview(e.target.result, i);
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    document.getElementById('repairForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData();
+        formData.append('room_id', document.getElementById('room_id').value);
+        formData.append('order_id', document.getElementById('order_id').value);
+        formData.append('title', document.getElementById('title').value);
+        formData.append('description', document.getElementById('description').value);
+        formData.append('priority', document.querySelector('input[name="priority"]:checked').value);
+        
+        uploadedFiles.forEach(file => {
+            formData.append('images', file);
+        });
+        
+        fetch('/api/repairs', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.code === 200) {
+                alert('报修提交成功，我们会尽快处理');
+                window.location.href = '/user/repairs';
+            } else {
+                alert(data.message || '提交失败');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('提交失败');
+        });
+    });
+    </script>
+</body>
+</html>

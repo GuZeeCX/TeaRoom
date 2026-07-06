@@ -1,0 +1,155 @@
+{% extends "admin/base.html" %}
+
+{% block title %}房间管理 - 无人茶室管理系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>房间管理</h2>
+    <a href="{{ url_for('admin.add_room') }}" class="btn btn-primary">
+        <i class="bi bi-plus-lg"></i>
+        添加房间
+    </a>
+</div>
+
+<!-- 搜索和筛选 -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-4">
+                <input type="text" class="form-control" name="search" placeholder="搜索房间名称" value="{{ search }}">
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" name="status">
+                    <option value="">全部状态</option>
+                    <option value="available" {% if status_filter == 'available' %}selected{% endif %}>可预约</option>
+                    <option value="occupied" {% if status_filter == 'occupied' %}selected{% endif %}>已占用</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-search"></i>
+                    搜索
+                </button>
+            </div>
+            <div class="col-md-3">
+                <a href="{{ url_for('admin.rooms') }}" class="btn btn-outline-secondary w-100">
+                    <i class="bi bi-x-lg"></i>
+                    重置
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 房间列表 -->
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>图片</th>
+                        <th>房间名称</th>
+                        <th>描述</th>
+                        <th>价格/小时</th>
+                        <th>状态</th>
+                        <th>设施</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for room in rooms %}
+                    <tr>
+                        <td>{{ room.id }}</td>
+                        <td>
+                            {% if room.image_url %}
+                            <img src="{{ room.image_url }}" alt="房间图片" style="width: 60px; height: 40px; object-fit: cover; border-radius: 8px;">
+                            {% else %}
+                            <div style="width: 60px; height: 40px; background: #e9ecef; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                                <i class="bi bi-image text-muted"></i>
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td>{{ room.name }}</td>
+                        <td>{{ room.description[:20] }}{{ '...' if room.description and room.description|length > 20 else '' }}</td>
+                        <td>¥{{ room.price_per_hour }}</td>
+                        <td>
+                            <span class="badge badge-{{ room.status }}">
+                                {% if room.status == 'available' %}可预约
+                                {% elif room.status == 'occupied' %}已占用
+                                {% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            {% if room.facilities %}
+                            <small class="text-muted">{{ room.facilities|join(', ') }}</small>
+                            {% else %}
+                            <small class="text-muted">-</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group">
+                                <a href="{{ url_for('admin.edit_room', room_id=room.id) }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <form method="POST" action="{{ url_for('admin.delete_room', room_id=room.id) }}" 
+                                      onsubmit="return confirm('确定要删除该房间吗？');" style="display: inline;">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" class="text-center text-muted py-4">
+                            <i class="bi bi-inbox" style="font-size: 48px;"></i>
+                            <p class="mt-2">暂无房间数据</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- 分页 -->
+{% if pagination.pages > 1 %}
+<nav aria-label="分页" class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if pagination.has_prev %}
+        <li class="page-item">
+            <a class="page-link" href="{{ url_for('admin.rooms', page=pagination.prev_num, search=search, status=status_filter) }}">
+                <i class="bi bi-chevron-left"></i>
+            </a>
+        </li>
+        {% endif %}
+        
+        {% for page_num in pagination.iter_pages() %}
+        {% if page_num %}
+        <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+            <a class="page-link" href="{{ url_for('admin.rooms', page=page_num, search=search, status=status_filter) }}">
+                {{ page_num }}
+            </a>
+        </li>
+        {% else %}
+        <li class="page-item disabled">
+            <span class="page-link">...</span>
+        </li>
+        {% endif %}
+        {% endfor %}
+        
+        {% if pagination.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="{{ url_for('admin.rooms', page=pagination.next_num, search=search, status=status_filter) }}">
+                <i class="bi bi-chevron-right"></i>
+            </a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}

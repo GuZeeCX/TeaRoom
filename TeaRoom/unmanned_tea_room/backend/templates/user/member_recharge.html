@@ -1,0 +1,309 @@
+{% extends "admin/base.html" %}
+
+{% block title %}会员充值 - 无人茶室管理系统{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2>会员充值</h2>
+            <p class="text-muted">成为会员享受专属优惠</p>
+        </div>
+    </div>
+
+    <!-- 会员权益 -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">
+                <i class="bi bi-gem"></i>
+                会员专属权益
+            </h5>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <div class="benefit-item">
+                        <i class="bi bi-percent"></i>
+                        <div>
+                            <strong>茶叶九折优惠</strong>
+                            <p class="text-muted mb-0">所有茶叶享受9折优惠</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="benefit-item">
+                        <i class="bi bi-cash-coin"></i>
+                        <div>
+                            <strong>消费满减优惠</strong>
+                            <p class="text-muted mb-0">满200减50，满300减100，满500减200</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 用户会员状态 -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">
+                <i class="bi bi-person-badge"></i>
+                我的会员状态
+            </h5>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="status-item">
+                        <span class="status-label">会员状态：</span>
+                        <span class="status-value {% if user.is_member and user.member_expires_at and user.member_expires_at > user.created_at %}text-success{% else %}text-muted{% endif %}">
+                            {% if user.is_member and user.member_expires_at and user.member_expires_at > user.created_at %}
+                                有效会员
+                            {% else %}
+                                非会员
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="status-item">
+                        <span class="status-label">会员到期时间：</span>
+                        <span class="status-value">
+                            {% if user.member_expires_at %}
+                                {{ user.member_expires_at.strftime("%Y-%m-%d") }}
+                            {% else %}
+                                未开通
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="status-item">
+                        <span class="status-label">当前余额：</span>
+                        <span class="status-value text-primary">¥{{ user.balance }}</span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="status-item">
+                        <span class="status-label">累计消费：</span>
+                        <span class="status-value">¥{{ user.total_consumption }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 会员充值表单 -->
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">
+                <i class="bi bi-credit-card"></i>
+                会员充值
+            </h5>
+            <form method="POST" action="{{ url_for('user_frontend.member_recharge') }}">
+                <div class="mb-3">
+                    <label for="months" class="form-label">选择会员时长</label>
+                    <select class="form-select" id="months" name="months" required onchange="updateAmount()">
+                        <option value="1">1个月</option>
+                        <option value="3">3个月</option>
+                        <option value="6">6个月</option>
+                        <option value="12">12个月</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="amount" class="form-label">充值金额</label>
+                    <input type="number" class="form-control" id="amount" name="amount" required min="1" step="0.01" value="99.00" readonly>
+                    <small class="form-text text-muted">1个月 ¥99.00，3个月 ¥288.00，6个月 ¥568.00，12个月 ¥1088.00</small>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">支付方式</label>
+                    <div class="row g-2">
+                        <div class="col-md-3">
+                            <div class="payment-option">
+                                <input type="radio" class="form-check-input" name="payment_method" id="wechat" value="wechat" required>
+                                <label class="form-check-label" for="wechat">
+                                    <i class="bi bi-wechat"></i>
+                                    微信支付
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="payment-option">
+                                <input type="radio" class="form-check-input" name="payment_method" id="alipay" value="alipay">
+                                <label class="form-check-label" for="alipay">
+                                    <i class="bi bi-alipay"></i>
+                                    支付宝
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="payment-option">
+                                <input type="radio" class="form-check-input" name="payment_method" id="card" value="card">
+                                <label class="form-check-label" for="card">
+                                    <i class="bi bi-credit-card"></i>
+                                    银行卡
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="payment-option">
+                                <input type="radio" class="form-check-input" name="payment_method" id="balance" value="balance">
+                                <label class="form-check-label" for="balance">
+                                    <i class="bi bi-wallet2"></i>
+                                    账户余额
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i>
+                    <strong>温馨提示：</strong>
+                    <ul class="mb-0">
+                        <li>会员期间所有茶叶享受9折优惠</li>
+                        <li>消费满200元减50元，满300元减100元，满500元减200元</li>
+                        <li>会员到期后需续费才能继续享受优惠</li>
+                    </ul>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary flex-fill">
+                        <i class="bi bi-check-circle"></i>
+                        确认充值
+                    </button>
+                    <a href="{{ url_for('user_frontend.profile') }}" class="btn btn-outline-secondary flex-fill">
+                        <i class="bi bi-x-circle"></i>
+                        返回
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// 会员价格配置
+const memberPrices = {
+    1: 99.00,
+    3: 288.00,
+    6: 568.00,
+    12: 1088.00
+};
+
+// 根据选择的月数更新金额
+function updateAmount() {
+    const months = parseInt(document.getElementById('months').value);
+    const amount = memberPrices[months] || 99.00;
+    document.getElementById('amount').value = amount.toFixed(2);
+}
+
+// 页面加载时初始化
+document.addEventListener('DOMContentLoaded', function() {
+    updateAmount();
+});
+</script>
+
+<style>
+.benefit-item {
+    display: flex;
+    align-items: center;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    margin-bottom: 10px;
+}
+
+.benefit-item i {
+    font-size: 32px;
+    color: #667eea;
+    margin-right: 15px;
+}
+
+.benefit-item strong {
+    display: block;
+    margin-bottom: 5px;
+    color: #333;
+}
+
+.status-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.status-item:last-child {
+    border-bottom: none;
+}
+
+.status-label {
+    color: #666;
+    font-size: 14px;
+}
+
+.status-value {
+    font-weight: bold;
+    color: #333;
+}
+
+.text-success {
+    color: #28a745;
+}
+
+.text-primary {
+    color: #667eea;
+}
+
+.payment-option {
+    text-align: center;
+    padding: 15px;
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    height: 100%;
+    min-height: 80px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.payment-option:hover {
+    border-color: #667eea;
+    background: #f0f0ff;
+}
+
+.payment-option input[type="radio"] {
+    display: none;
+}
+
+.payment-option label {
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+}
+
+.payment-option i {
+    font-size: 24px;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.payment-option .form-check-label {
+    font-size: 14px;
+    margin: 0;
+}
+
+.gap-2 {
+    gap: 0.5rem;
+}
+
+.flex-fill {
+    flex: 1;
+}
+</style>
+{% endblock %}
